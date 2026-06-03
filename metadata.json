@@ -1,0 +1,6 @@
+{
+  "name": "Retro VHS Simulator",
+  "description": "An interactive 90s retro VHS video simulation tool featuring dynamic scanlines, adjustable tracking distortions, color offset sliders, custom OSD presets, and ambient synthesizer hums.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+@keyframes crt-off {
+  0% {
+    transform: scale(1, 1);
+    filter: brightness(1) contrast(1) saturate(1);
+    background: transparent;
+    opacity: 1;
+  }
+  35% {
+    transform: scale(1, 0.003);
+    filter: brightness(4) contrast(2) saturate(0.2);
+    background: #ffffff;
+    opacity: 1;
+  }
+  75% {
+    transform: scale(0.003, 0.003);
+    filter: brightness(12) contrast(4);
+    background: #ffffff;
+    box-shadow: 0 0 10px #ffffff;
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0, 0);
+    filter: brightness(24);
+    opacity: 0;
+  }
+}
+
+@keyframes crt-on {
+  0% {
+    transform: scale(0, 0);
+    filter: brightness(24);
+    opacity: 0;
+  }
+  25% {
+    transform: scale(0.003, 0.003);
+    filter: brightness(12) contrast(4);
+    background: #ffffff;
+    box-shadow: 0 0 10px #ffffff;
+    opacity: 1;
+  }
+  65% {
+    transform: scale(1, 0.003);
+    filter: brightness(4) contrast(2) saturate(0.2);
+    background: #ffffff;
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1, 1);
+    filter: brightness(1) contrast(1) saturate(1);
+    background: transparent;
+    opacity: 1;
+  }
+}
+
+.crt-power-off {
+  animation: crt-off 0.5s cubic-bezier(0.1, 0.8, 0.15, 1) forwards !important;
+}
+
+.crt-power-on {
+  animation: crt-on 0.55s cubic-bezier(0.1, 0.8, 0.15, 1) forwards !important;
+}
+
+input[type="range"] {
+  touch-action: pan-y;
+}
