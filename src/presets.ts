@@ -128,7 +128,71 @@ export const DEFAULT_SETTINGS: SimulatorSettings = {
   flipHorizontal: false,
   flipVertical: false,
   debugModeEnabled: false,
-  customSliderSlots: ["hSyncSkew", "vSyncRoll", "fuzzOpacity", "needleNoise", "trackingDisplacementX", "chromaSmearFactor"],
+  customSliderSlots: ["hSyncSkew", "vSyncRoll", "scanlineOpacity", "crtCurvature", "fuzzOpacity", "needleNoise", "trackingDisplacementX", "chromaSmearFactor", "phosphorTrails", "scanlinesEnabled", "globalSaturation", "osdEnabled"],
+};
+
+export const BASE_INITIAL_STATE: SimulatorSettings = {
+  ...DEFAULT_SETTINGS,
+  sourceType: "camera",
+  sourceColor: "#05051a",
+
+  // RESET ALL WAVES
+  hWaveAmp: 0,
+  vWaveAmp: 0,
+  
+  // RESET ALL WOBBLES
+  globalWobbleAmpX: 0,
+  globalWobbleAmpY: 0,
+  globalWobbleFreqX: 3.5,
+  globalWobbleFreqY: 2.0,
+  globalWobbleSpeed: 0.8,
+  lineJitterStrength: 0,
+  lineJitterFrequency: 0.15,
+  hSyncSkew: 0,
+  vSyncRoll: 0,
+
+  // RESET ALL NOISE
+  fuzzOpacity: 0,
+  needleNoise: 0,
+  trackingLinesCount: 0,
+  trackingBlockHeight: 0,
+  trackingDisplacementX: 0,
+  trackingNoiseDensity: 0.1,
+  
+  // RESET ALL COLOR SHIFTS TO NEUTRAL
+  globalHueRotate: 0,
+  globalSaturation: 100,
+  globalBrightness: 100,
+  globalContrast: 100,
+  globalBlur: 0,
+  chromaPhaseShift: 0,
+  chromaScrollSpeed: 0,
+  chromaSmearFactor: 0,
+  chromaOffsetRedX: 0,
+  chromaOffsetRedY: 0,
+  chromaOffsetBlueX: 0,
+  chromaOffsetBlueY: 0,
+  chromaOffsetGreenX: 0,
+  chromaOffsetGreenY: 0,
+  lumaBleedThreshold: 0.7,
+  
+  // SCANLINES / GRILL (Reset to moderate defaults)
+  scanlineOpacity: 0.3,
+  scanlinesEnabled: true,
+  grillMask: "none",
+  crtCurvature: 0.05,
+  crtVignette: 0.3,
+  pixelScale: 1,
+
+  // GHOSTING
+  ghostingCount: 0,
+  ghostingStrength: 0,
+  phosphorTrails: 0,
+  ghostingOffset: 25,
+
+  // OSD
+  osdEnabled: true,
+  osdCustomDate: "CALIBRATION MODE"
 };
 
 export const PRESETS: Record<string, { name: string; description: string; settings: Partial<SimulatorSettings> }> = {

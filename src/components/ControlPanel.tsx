@@ -50,6 +50,7 @@ interface ControlPanelProps {
   onOverlayUploadClick?: () => void;
   uploadedMediaSrc: string | null;
   uploadedMediaType: "image" | "video" | null;
+  onRestartGif?: () => void;
 }
 
 export const ControlPanel: React.FC<ControlPanelProps> = ({
@@ -86,6 +87,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
   onExportPresets,
   onImportPresets,
   onOverlayUploadClick,
+  onRestartGif,
   uploadedMediaSrc,
   uploadedMediaType,
 }) => {
@@ -1011,9 +1013,26 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         {/* TAB 4: CHROMATIC SEPARATION & COLOR PHASE */}
         {activeTab === "color" && (
           <div className="space-y-4">
-            <h3 className="text-xs font-mono uppercase text-sky-400 tracking-wider border-b border-slate-800 pb-1.5 font-bold">
-              Subpixel Chromatic Aberration X/Y Controls
-            </h3>
+            <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
+              <h3 className="text-xs font-mono uppercase text-sky-400 tracking-wider font-bold">
+                Subpixel Chromatic Aberration X/Y Controls
+              </h3>
+              <button
+                onClick={() => onChange({ 
+                  chromaOffsetRedX: 0,
+                  chromaOffsetRedY: 0,
+                  chromaOffsetGreenX: 0,
+                  chromaOffsetGreenY: 0,
+                  chromaOffsetBlueX: 0,
+                  chromaOffsetBlueY: 0
+                })}
+                className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition-colors uppercase font-bold tracking-tighter"
+                title="Reset all channel offsets to zero"
+              >
+                <RotateCcw size={10} />
+                Refresh Splits
+              </button>
+            </div>
 
             {/* Red Channel displacements */}
             <div className="p-3 bg-red-950/15 border border-red-900/40 rounded-md space-y-3">
@@ -1126,9 +1145,28 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
               </div>
             </div>
 
-            <h3 className="text-xs font-mono uppercase text-sky-400 tracking-wider border-b border-slate-800 pt-3 pb-1.5 font-bold">
-              Analog Phase & Bandwidth Smearing
-            </h3>
+            <div className="flex justify-between items-center border-b border-slate-800 pt-3 pb-1.5">
+              <h3 className="text-xs font-mono uppercase text-sky-400 tracking-wider font-bold">
+                Analog Phase & Bandwidth Smearing
+              </h3>
+              <button
+                onClick={() => onChange({ 
+                  chromaPhaseShift: 0, 
+                  chromaScrollSpeed: 0, 
+                  chromaSmearFactor: 0,
+                  lumaBleedThreshold: 0.7,
+                  globalHueRotate: 0,
+                  globalSaturation: 100,
+                  globalContrast: 100,
+                  globalBrightness: 100
+                })}
+                className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition-colors uppercase font-bold tracking-tighter"
+                title="Reset all color phases and filters"
+              >
+                <RotateCcw size={10} />
+                Refresh Colors
+              </button>
+            </div>
 
             {/* Chrominance Phase shift degree wheel */}
             <div className="space-y-2 p-3 bg-slate-950/60 rounded border border-slate-800">
@@ -1587,38 +1625,46 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                   </div>
 
                   {/* GIF Playback Controls for Overlay */}
-                  {settings.blendOverlayUrl && settings.blendOverlayUrl.toLowerCase().endsWith(".gif") && (
-                    <div className="pt-2 mt-2 border-t border-zinc-900 space-y-3">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => onChange({ blendOverlayGifPlaying: !settings.blendOverlayGifPlaying })}
-                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-xs border transition-all font-bold cursor-pointer ${
-                            settings.blendOverlayGifPlaying 
-                              ? "bg-teal-950/40 border-teal-800 text-teal-400" 
-                              : "bg-zinc-900 border-zinc-800 text-zinc-500"
-                          }`}
-                        >
-                          {settings.blendOverlayGifPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-                          <span>{settings.blendOverlayGifPlaying ? "PAUSE OVERLAY GIF" : "RESUME OVERLAY GIF"}</span>
-                        </button>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-[10px] font-mono text-zinc-400">
-                          <span>Overlay GIF Speed:</span>
-                          <span className="text-teal-400">{settings.blendOverlayGifSpeed.toFixed(1)}x</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="0.1"
-                          max="5.0"
-                          step="0.1"
-                          value={settings.blendOverlayGifSpeed}
-                          onChange={(e) => onChange({ blendOverlayGifSpeed: Number(e.target.value) })}
-                          className="w-full accent-teal-500 bg-zinc-900 h-4 appearance-none cursor-pointer"
-                        />
-                      </div>
+                  <div className="pt-2 mt-2 border-t border-zinc-900 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          console.log("GIF button clicked");
+                          onChange({ blendOverlayGifPlaying: !settings.blendOverlayGifPlaying });
+                        }}
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-xs border transition-all font-bold cursor-pointer ${
+                          settings.blendOverlayGifPlaying 
+                            ? "bg-teal-950/40 border-teal-800 text-teal-400" 
+                            : "bg-zinc-900 border-zinc-800 text-zinc-500"
+                        }`}
+                      >
+                        {settings.blendOverlayGifPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                        <span>{settings.blendOverlayGifPlaying ? "GIF PAUSE" : "GIF RESUME"}</span>
+                      </button>
+                      <button
+                        onClick={onRestartGif}
+                        className="flex items-center justify-center p-2 bg-zinc-900 border border-zinc-800 rounded text-amber-500 hover:text-amber-300 hover:bg-zinc-800"
+                        title="Restart GIF animation"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                  )}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-[10px] font-mono text-zinc-400">
+                        <span>Overlay GIF Speed:</span>
+                        <span className="text-teal-400">{settings.blendOverlayGifSpeed.toFixed(1)}x</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0.1"
+                        max="5.0"
+                        step="0.1"
+                        value={settings.blendOverlayGifSpeed}
+                        onChange={(e) => onChange({ blendOverlayGifSpeed: Number(e.target.value) })}
+                        className="w-full accent-teal-500 bg-zinc-900 h-4 appearance-none cursor-pointer"
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

@@ -21,6 +21,7 @@ interface CrtCanvasProps {
   resetSyncTrigger: number;
   tvPowerState: "on" | "off" | "turning_off" | "turning_on";
   manualGlitch: boolean;
+  restartGifTrigger: number;
 }
 
 export const CrtCanvas: React.FC<CrtCanvasProps> = ({
@@ -37,6 +38,7 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
   resetSyncTrigger,
   tvPowerState,
   manualGlitch,
+  restartGifTrigger,
 }) => {
   const trailCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const bufferCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -59,8 +61,23 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
   const ovGifCanvasRef = useRef<HTMLCanvasElement>(document.createElement("canvas"));
   const bgGifAnimRef = useRef<any>(null);
   const ovGifAnimRef = useRef<any>(null);
+  
+  // Manual GIF Frame Control
+  const ovFramesRef = useRef<any[]>([]);
+  const ovTotalDurationRef = useRef<number>(0);
+  const ovFrameStartRef = useRef<number>(0);
+  const ovPausedTimeRef = useRef<number>(0);
+  const lastGifPlayingRef = useRef<boolean>(false);
+
+  const settingsRef = useRef(settings);
+  
+  useEffect(() => {
+	settingsRef.current = settings;
+  }, [settings]);
+  
   const lastBgUrlRef = useRef<string>("");
   const lastOvUrlRef = useRef<string>("");
+  const lastRestartRef = useRef<number>(0);
 
   useEffect(() => {
     // Background GIF Animator
@@ -87,35 +104,71 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
     
     // Overlay GIF Animator
     const ovUrl = (blendOverlayElement as any)?.src || "";
-    if (ovUrl && ovUrl.toLowerCase().includes(".gif") && ovUrl !== lastOvUrlRef.current) {
-      lastOvUrlRef.current = ovUrl;
-      if (ovGifAnimRef.current) ovGifAnimRef.current.stop();
+    // Allow reload if URL changed OR restart triggered
+    const shouldReload = ovUrl && settingsRef.current.blendOverlayIsGif && (ovUrl !== lastOvUrlRef.current || restartGifTrigger !== lastRestartRef.current);
+    
+    if (shouldReload) {
+      if (ovUrl !== lastOvUrlRef.current) lastOvUrlRef.current = ovUrl;
+      
+      if (ovGifAnimRef.current) {
+        ovGifAnimRef.current.stop();
+        ovGifAnimRef.current = null;
+      }
+      ovFramesRef.current = [];
+      ovTotalDurationRef.current = 0;
+      ovFrameStartRef.current = performance.now();
+      ovPausedTimeRef.current = 0;
+
       try {
         const giflerInstance = (window as any).gifler;
         if (giflerInstance) {
+          console.log("CrtCanvas: Attempting to load GIF via frame extractor", ovUrl);
           giflerInstance(ovUrl).get((anim: any) => {
-            ovGifAnimRef.current = anim;
-            anim.animateInCanvas(ovGifCanvasRef.current);
-            if (!settings.blendOverlayGifPlaying) anim.stop();
+            if (anim && anim.frames) {
+              console.log("CrtCanvas: GIF frames decoded successfully", anim.frames.length);
+              ovGifAnimRef.current = anim;
+              ovFramesRef.current = anim.frames;
+              
+              // Calculate total duration for looping
+              let total = 0;
+              anim.frames.forEach((f: any) => {
+                total += f.delay || 100;
+              });
+              ovTotalDurationRef.current = total;
+            } else {
+              console.warn("CrtCanvas: GIF loaded but frames are missing", anim);
+            }
+            
+            // We do NOT call anim.animateInCanvas here anymore. 
+            // We will manualy draw frames in the loop.
+            anim.stop(); 
           });
+          if (restartGifTrigger !== lastRestartRef.current) lastRestartRef.current = restartGifTrigger;
         }
       } catch (e) {
         console.error("Gifler OV fail", e);
       }
-    } else if (ovGifAnimRef.current) {
-      if (settings.blendOverlayGifPlaying) ovGifAnimRef.current.start();
-      else ovGifAnimRef.current.stop();
     }
-  }, [uploadedImageElement, blendOverlayElement, settings.gifPlaying, settings.blendOverlayGifPlaying]);
+
+    // Handle Pause/Play state transitions for the internal "clock"
+    if (settings.blendOverlayGifPlaying !== lastGifPlayingRef.current) {
+      if (settings.blendOverlayGifPlaying) {
+        // Resuming: Adjust the start time so the animation continues from where it was
+        const pauseDuration = performance.now() - ovPausedTimeRef.current;
+        ovFrameStartRef.current += pauseDuration;
+      } else {
+        // Pausing: Record when we stopped
+        ovPausedTimeRef.current = performance.now();
+      }
+      lastGifPlayingRef.current = settings.blendOverlayGifPlaying;
+    }
+  }, [uploadedImageElement, blendOverlayElement, settings.gifPlaying, settings.blendOverlayGifPlaying, restartGifTrigger]);
 
   useEffect(() => {
-	rollYRef.current = 0;
+    rollYRef.current = 0;
+    chromaOffsetRef.current = 0;
   }, [resetSyncTrigger]);
 
-  const settingsRef = useRef<SimulatorSettings>(settings);
-  useEffect(() => {
-    settingsRef.current = settings;
-  }, [settings]);
 
   const tvPowerStateRef = useRef<"on" | "off" | "turning_off" | "turning_on">(tvPowerState);
   useEffect(() => {
@@ -369,8 +422,37 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
           wobbleY = Math.cos(wobbleT * 1.2) * settings.blendOverlayWobble * 0.5;
         }
 
-        const isGif = (blendOverlayElement as any)?.src?.toLowerCase().includes(".gif");
-        const drawSource = (isGif && ovGifCanvasRef.current.width > 0) ? ovGifCanvasRef.current : blendOverlayElement;
+        const isGif = settings.blendOverlayIsGif;
+        let drawSource: any = blendOverlayElement;
+        
+        if (isGif && ovFramesRef.current && ovFramesRef.current.length > 0) {
+          const speed = settings.blendOverlayGifSpeed || 1.0;
+          const now = settings.blendOverlayGifPlaying ? performance.now() : ovPausedTimeRef.current;
+          const elapsed = (now - ovFrameStartRef.current) * speed;
+          
+          // Loop logic: find the frame that corresponds to the elapsed time
+          const totalDuration = ovTotalDurationRef.current || 1000;
+          const loopTime = elapsed % totalDuration;
+          
+          let accum = 0;
+          let frameIndex = 0;
+          const frames = ovFramesRef.current;
+          for (let i = 0; i < frames.length; i++) {
+            accum += (frames[i]?.delay || 100);
+            if (loopTime < accum) {
+              frameIndex = i;
+              break;
+            }
+          }
+          
+          // gifler frame objects have a .buffer property which is a Canvas
+          drawSource = frames[frameIndex]?.buffer || blendOverlayElement;
+        }
+
+        if (!drawSource) {
+          bufferCtx.restore();
+          return;
+        }
 
         const oW = drawSource instanceof HTMLImageElement ? (drawSource as HTMLImageElement).naturalWidth : (drawSource as HTMLCanvasElement).width || 300;
         const oH = drawSource instanceof HTMLImageElement ? (drawSource as HTMLImageElement).naturalHeight : (drawSource as HTMLCanvasElement).height || 200;

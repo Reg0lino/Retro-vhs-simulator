@@ -10,7 +10,7 @@ import {
   VolumeX, Volume2, ShieldAlert, Monitor
 } from "lucide-react";
 import { SimulatorSettings } from "./types";
-import { DEFAULT_SETTINGS, PRESETS } from "./presets";
+import { DEFAULT_SETTINGS, PRESETS, BASE_INITIAL_STATE } from "./presets";
 import { CrtCanvas } from "./components/CrtCanvas";
 import { ControlPanel } from "./components/ControlPanel";
 import { MacroSliders } from "./components/MacroSliders";
@@ -21,7 +21,7 @@ import gifshot from "gifshot";
 
 
 export default function App() {
-  const [settings, setSettings] = useState<SimulatorSettings>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<SimulatorSettings>(BASE_INITIAL_STATE);
 
   // High fidelity export master settings state
   const [showExportModal, setShowExportModal] = useState<boolean>(false);
@@ -98,10 +98,10 @@ export default function App() {
       const saved = localStorage.getItem("vhs_fav_keys_v2");
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length === 6) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch (e) {}
-    return ["pixelScale", "fuzzOpacity", "scanlineOpacity", "hWaveAmp", "trackingDisplacementX", "chromaSmearFactor"];
+    return DEFAULT_SETTINGS.customSliderSlots;
   });
 
   useEffect(() => {
@@ -130,6 +130,9 @@ export default function App() {
   const [vidLoop, setVidLoop] = useState<boolean>(true);
   const [vidSpeed, setVidSpeed] = useState<number>(1.0);
   const [vidHasCorsError, setVidHasCorsError] = useState<boolean>(false);
+
+  // Trigger for restarting gif overlay
+  const [restartGifTrigger, setRestartGifTrigger] = useState<number>(0);
 
   // WebM Recorder references
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -350,11 +353,11 @@ export default function App() {
     if (presetSettings) {
       setActivePreset(key);
       
-      const baseSettings = overwrite ? DEFAULT_SETTINGS : settings;
+      const baseSettings = BASE_INITIAL_STATE;
       const nextS = { ...baseSettings, ...presetSettings };
       
       // Keep camera active and persistent if running
-      if (isCameraActive) {
+      if (isCameraActive || settings.sourceType === "camera") {
         nextS.sourceType = "camera";
       }
       
@@ -376,6 +379,7 @@ export default function App() {
       }
       
       setSettings(nextS);
+      setSyncReset(prev => prev + 1);
     }
   };
 
@@ -567,9 +571,12 @@ export default function App() {
       if (!file) return;
 
       const url = URL.createObjectURL(file);
+      const isGif = file.type.includes("gif") || file.name.toLowerCase().endsWith(".gif");
       handleSettingsChange({ 
         blendOverlayUrl: url,
-        blendOverlayOpacity: 0.6
+        blendOverlayOpacity: 0.6,
+        blendOverlayIsGif: isGif,
+        blendOverlayGifPlaying: false
       });
     };
     input.click();
@@ -883,85 +890,69 @@ export default function App() {
       return;
     }
 
-    const randomSettings: Partial<SimulatorSettings> = {
-      pixelScale: Math.floor(Math.random() * 3) + 1, // 1 to 3
-      
-      // Screen waves
-      hWaveAmp: Math.random() < 0.45 ? 0 : Math.random() * 30,
-      hWaveFreq: 0.01 + Math.random() * 0.045,
-      hWaveSpeed: 1.0 + Math.random() * 4.0,
-
-      vWaveAmp: Math.random() < 0.85 ? 0 : Math.random() * 20,
-      vWaveFreq: 0.01 + Math.random() * 0.04,
-      vWaveSpeed: 1.0 + Math.random() * 4.0,
-
-      // Global filters
-      globalBrightness: 95 + Math.floor(Math.random() * 30), // 95 to 125 %
-      globalContrast: 85 + Math.floor(Math.random() * 50), // 85 to 135 %
-      globalSaturation: Math.random() < 0.2 ? 0 : 60 + Math.floor(Math.random() * 85),
-      globalBlur: Math.random() < 0.5 ? 0 : Math.random() * 1.8,
-
-      // Wobbles & Skews
-      globalWobbleSpeed: 0.6 + Math.random() * 1.8,
-      globalWobbleAmpX: Math.random() * 10.0,
-      globalWobbleAmpY: Math.random() * 5.0,
-      lineJitterStrength: Math.random() * 5.0,
-      lineJitterFrequency: Math.random() * 0.35,
-      hSyncSkew: Math.random() * 12.0,
-      vSyncRoll: Math.random() < 0.8 ? 0 : Math.random() * 0.035,
-
-      // Fuzz & Noise
-      fuzzOpacity: 0.03 + Math.random() * 0.28,
-      fuzzSize: Math.floor(Math.random() * 2) + 1, // 1 to 2
-      fuzzColorRatio: Math.random(),
-      needleNoise: Math.random() * 0.65,
-      needleNoiseDensity: 0.15 + Math.random() * 0.45,
-
-      // Tracking band
-      trackingLinesCount: Math.floor(Math.random() * 3), // 0 to 2
-      trackingBlockY: Math.random(),
-      trackingBlockHeight: 0.03 + Math.random() * 0.10,
-      trackingScrollSpeed: Math.random() < 0.7 ? 0 : -30 + Math.random() * 60,
-      trackingDisplacementX: 6.0 + Math.random() * 20.0,
-      trackingNoiseDensity: 0.35 + Math.random() * 0.55,
-      trackingFuzzOpacity: 0.25 + Math.random() * 0.55,
-
-      // Chromatic offset
-      chromaOffsetRedX: -8 + Math.random() * 16,
-      chromaOffsetBlueX: -8 + Math.random() * 16,
-      chromaPhaseShift: -30 + Math.random() * 60,
-      chromaScrollSpeed: Math.random() < 0.8 ? 0 : -15 + Math.random() * 30,
-      chromaSmearFactor: Math.random() * 0.8,
-      lumaBleedThreshold: 0.45 + Math.random() * 0.45,
-
-      // PhosphorTrails & Ghosting
-      ghostingCount: Math.floor(Math.random() * 2) + 1, // 1 to 2
-      ghostingOffset: Math.floor(8 + Math.random() * 24),
-      ghostingStrength: Math.random() * 0.35,
-      phosphorTrails: Math.random() * 0.5,
-
-      // Scanline & Grill
-      scanlineOpacity: 0.12 + Math.random() * 0.40,
-      scanlineDensity: Math.random() < 0.5 ? 240 : 480,
-      crtCurvature: Math.random() * 0.10,
-      crtVignette: 0.20 + Math.random() * 0.45,
-      grillMask: ["none", "aperture", "shadow", "slot"][Math.floor(Math.random() * 4)] as any,
-      grillScale: 0.9 + Math.random() * 1.2,
-
-      // OSD (Almost always off to satisfy "Keep most presets with text off")
-      osdEnabled: false,
-      osdText: ["PLAY", "PAUSE", "REC", "STOP", "SLOW", "VHS TEST"][Math.floor(Math.random() * 6)],
-      osdCustomY: 0.15 + Math.random() * 0.75,
-      osdTextWobble: 0,
-      
-      // Secondary blend overlay resets
-      blendOverlayOpacity: 0.0,
+    const allPossibleUpdates: Record<string, () => any> = {
+      pixelScale: () => Math.floor(Math.random() * 3) + 1,
+      hWaveAmp: () => Math.random() < 0.4 ? 0 : Math.random() * 30,
+      hWaveFreq: () => 0.01 + Math.random() * 0.045,
+      hWaveSpeed: () => 1.0 + Math.random() * 4.0,
+      vWaveAmp: () => Math.random() < 0.8 ? 0 : Math.random() * 20,
+      vWaveFreq: () => 0.01 + Math.random() * 0.04,
+      vWaveSpeed: () => 1.0 + Math.random() * 4.0,
+      globalBrightness: () => 95 + Math.floor(Math.random() * 30),
+      globalContrast: () => 85 + Math.floor(Math.random() * 50),
+      globalSaturation: () => Math.random() < 0.2 ? 0 : 60 + Math.floor(Math.random() * 85),
+      globalBlur: () => Math.random() < 0.5 ? 0 : Math.random() * 1.8,
+      globalWobbleSpeed: () => 0.6 + Math.random() * 1.8,
+      globalWobbleAmpX: () => Math.random() * 10.0,
+      globalWobbleAmpY: () => Math.random() * 5.0,
+      lineJitterStrength: () => Math.random() * 5.0,
+      lineJitterFrequency: () => Math.random() * 0.35,
+      hSyncSkew: () => Math.random() * 12.0,
+      vSyncRoll: () => Math.random() < 0.8 ? 0 : Math.random() * 0.035,
+      fuzzOpacity: () => 0.03 + Math.random() * 0.28,
+      fuzzSize: () => Math.floor(Math.random() * 2) + 1,
+      fuzzColorRatio: () => Math.random(),
+      needleNoise: () => Math.random() * 0.65,
+      needleNoiseDensity: () => 0.15 + Math.random() * 0.45,
+      trackingLinesCount: () => Math.floor(Math.random() * 3),
+      trackingBlockY: () => Math.random(),
+      trackingBlockHeight: () => 0.03 + Math.random() * 0.10,
+      trackingScrollSpeed: () => Math.random() < 0.7 ? 0 : -30 + Math.random() * 60,
+      trackingDisplacementX: () => 6.0 + Math.random() * 20.0,
+      trackingNoiseDensity: () => 0.35 + Math.random() * 0.55,
+      trackingFuzzOpacity: () => 0.25 + Math.random() * 0.55,
+      chromaOffsetRedX: () => -8 + Math.random() * 16,
+      chromaOffsetBlueX: () => -8 + Math.random() * 16,
+      chromaPhaseShift: () => -30 + Math.random() * 60,
+      chromaScrollSpeed: () => Math.random() < 0.8 ? 0 : -15 + Math.random() * 30,
+      chromaSmearFactor: () => Math.random() * 0.8,
+      lumaBleedThreshold: () => 0.45 + Math.random() * 0.45,
+      ghostingCount: () => Math.floor(Math.random() * 2) + 1,
+      ghostingOffset: () => Math.floor(8 + Math.random() * 24),
+      ghostingStrength: () => Math.random() * 0.35,
+      phosphorTrails: () => Math.random() * 0.5,
+      scanlineOpacity: () => 0.12 + Math.random() * 0.40,
+      scanlineDensity: () => Math.random() < 0.5 ? 240 : 480,
+      crtCurvature: () => Math.random() * 0.10,
+      crtVignette: () => 0.20 + Math.random() * 0.45,
+      grillMask: () => ["none", "aperture", "shadow", "slot"][Math.floor(Math.random() * 4)] as any,
+      grillScale: () => 0.9 + Math.random() * 1.2,
     };
 
+    const randomSettings: Partial<SimulatorSettings> = {};
+    // Randomize a random selection of sliders (roughly 70% of them each time)
+    Object.entries(allPossibleUpdates).forEach(([key, getRandom]) => {
+      if (Math.random() < 0.7) {
+        randomSettings[key as keyof SimulatorSettings] = getRandom();
+      }
+    });
+
     setSettings(() => ({
-      ...DEFAULT_SETTINGS,
-      ...randomSettings
+      ...BASE_INITIAL_STATE,
+      ...randomSettings,
+      sourceType: (isCameraActive || settings.sourceType === "camera") ? "camera" : (randomSettings.sourceType || BASE_INITIAL_STATE.sourceType)
     }));
+    setSyncReset(prev => prev + 1);
     setActivePreset("custom");
     setRandomConfirm(false);
   };
@@ -1733,6 +1724,7 @@ export default function App() {
             onRandomize={handleRandomize}
             randomConfirm={randomConfirm}
             onOverlayUploadClick={triggerOverlayUpload}
+            onRestartGif={() => setRestartGifTrigger(t => t + 1)}
             uploadedMediaSrc={uploadedMediaSrc}
             uploadedMediaType={uploadedMediaType}
           />
@@ -1836,6 +1828,7 @@ export default function App() {
         resetSyncTrigger={syncReset}
         tvPowerState={tvPowerState}
         manualGlitch={isManualGlitchActive}
+        restartGifTrigger={restartGifTrigger}
       />
 
       {/* High Fidelity Export Configuration Modal HUD */}

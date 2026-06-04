@@ -9,6 +9,7 @@ yarn-debug.log*
 yarn-error.log*
 firebase-debug.log*
 .firebase/
+
 .env*
 !.env.example
 CustomExports/

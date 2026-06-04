@@ -124,6 +124,7 @@ export interface SimulatorSettings {
   blendOverlayX: number; // position x
   blendOverlayY: number; // position y
   blendOverlayBlendMode: "normal" | "screen" | "multiply" | "overlay" | "color-dodge";
+  blendOverlayIsGif: boolean;
 
   // Screen layout
   flexToScreen: boolean; // Stretch/compress to target viewport size directly
