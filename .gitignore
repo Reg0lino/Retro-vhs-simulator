@@ -4,5 +4,8 @@ dist/
 coverage/
 .DS_Store
 *.log
+firebase-debug.log*
+.firebase/
 .env*
 !.env.example
+CustomExports/

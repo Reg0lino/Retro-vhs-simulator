@@ -14,12 +14,34 @@ import { DEFAULT_SETTINGS, PRESETS } from "./presets";
 import { CrtCanvas } from "./components/CrtCanvas";
 import { ControlPanel } from "./components/ControlPanel";
 import { MacroSliders } from "./components/MacroSliders";
+import { ExportModal } from "./components/ExportModal";
+import { VcrController } from "./components/VcrController";
 import { ASSIGNABLE_PARAMS } from "./constants";
 import gifshot from "gifshot";
 
 
 export default function App() {
   const [settings, setSettings] = useState<SimulatorSettings>(DEFAULT_SETTINGS);
+
+  // High fidelity export master settings state
+  const [showExportModal, setShowExportModal] = useState<boolean>(false);
+  const [exportConfig, setExportConfig] = useState({
+    format: "mp4" as "mp4" | "webm" | "gif",
+    preset: "1080p" as "original" | "485p" | "480p" | "720p" | "1080p" | "4k" | "custom",
+    customWidth: 1280,
+    customHeight: 720,
+    fps: 30, // 24, 30, 60
+    bitrateLevel: "high" as "low" | "medium" | "high" | "cranked" | "ludicrous" | "custom",
+    customBitrate: 20, // Mbps
+    gifLength: "short" as "short" | "medium" | "long",
+    stopTrigger: "manual" as "manual" | "auto",
+    autoStopDuration: 10, // seconds
+  });
+
+  const originalCanvasWidthRef = useRef<number>(640);
+  const originalCanvasHeightRef = useRef<number>(480);
+  const recordingAnimationRef = useRef<number | null>(null);
+
   const [activePreset, setActivePreset] = useState<string>("testBars");
   const [activeTab, setActiveTab] = useState<string>("signal");
 
@@ -69,6 +91,7 @@ export default function App() {
   const [randomConfirm, setRandomConfirm] = useState<boolean>(false);
   const [syncReset, setSyncReset] = useState<number>(0);
   const [tvPowerState, setTvPowerState] = useState<"on" | "off" | "turning_off" | "turning_on">("on");
+  const [isManualGlitchActive, setIsManualGlitchActive] = useState<boolean>(false);
 
   const [favKeys, setFavKeys] = useState<string[]>(() => {
     try {
@@ -935,8 +958,8 @@ export default function App() {
       blendOverlayOpacity: 0.0,
     };
 
-    setSettings(prev => ({
-      ...prev,
+    setSettings(() => ({
+      ...DEFAULT_SETTINGS,
       ...randomSettings
     }));
     setActivePreset("custom");
@@ -972,40 +995,122 @@ export default function App() {
     };
   }, [cameraVideoNode]);
 
+  // Helper to resolve the intended output resolution width and height
+  const getExportDimensions = () => {
+    const liveW = settings.canvasWidth;
+    const liveH = settings.canvasHeight;
+    const ratio = liveW / liveH;
+
+    const makeEven = (val: number) => {
+      const rounded = Math.round(val);
+      return rounded % 2 === 0 ? rounded : rounded + 1;
+    };
+
+    switch (exportConfig.preset) {
+      case "480p": {
+        const h = 480;
+        const w = makeEven(h * ratio);
+        return { w, h };
+      }
+      case "720p": {
+        const h = 720;
+        const w = makeEven(h * ratio);
+        return { w, h };
+      }
+      case "1085":
+      case "1080p": {
+        const h = 1080;
+        const w = makeEven(h * ratio);
+        return { w, h };
+      }
+      case "4k": {
+        const h = 2160;
+        const w = makeEven(h * ratio);
+        return { w, h };
+      }
+      case "custom": {
+        const w = makeEven(exportConfig.customWidth || 1280);
+        const h = makeEven(exportConfig.customHeight || 720);
+        return { w, h };
+      }
+      case "original":
+      default:
+        return { w: makeEven(liveW), h: makeEven(liveH) };
+    }
+  };
+
+  // Helper to calculate Bits per second for MediaRecorder
+  const getExportBitrateBps = () => {
+    let mbps = 16; // default high quality 16 Mbps
+    switch (exportConfig.bitrateLevel) {
+      case "low": mbps = 3; break;
+      case "medium": mbps = 8; break;
+      case "high": mbps = 16; break;
+      case "cranked": mbps = 32; break;
+      case "ludicrous": mbps = 60; break;
+      case "custom": mbps = exportConfig.customBitrate || 16; break;
+    }
+    return mbps * 1000 * 1000;
+  };
+
   // MediaRecorder triggers video recording (WebM or MP4)
   const startRecordingVideo = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    const { w: targetW, h: targetH } = getExportDimensions();
+
+    // Create offscreen canvas for upscaling
+    const offscreenCanvas = document.createElement("canvas");
+    offscreenCanvas.width = targetW;
+    offscreenCanvas.height = targetH;
+    const offscreenCtx = offscreenCanvas.getContext("2d");
+    if (offscreenCtx) {
+      offscreenCtx.imageSmoothingEnabled = true;
+      offscreenCtx.imageSmoothingQuality = "high";
+    }
+
     recordedChunksRef.current = [];
-    const canvasStream = canvas.captureStream(settings.exportFps);
+
+    // Capture stream from the upscaled offscreen canvas!
+    const canvasStream = offscreenCanvas.captureStream(exportConfig.fps);
     const combinedStream = new MediaStream();
 
     // Export video streams
     canvasStream.getVideoTracks().forEach((t) => combinedStream.addTrack(t));
 
     try {
-      const isMp4 = settings.exportFormat === "mp4";
-      let options: MediaRecorderOptions = { mimeType: isMp4 ? "video/mp4" : "video/webm;codecs=vp9,opus" };
+      const isMp4 = exportConfig.format === "mp4";
+      let resolvedMimeType = "video/mp4";
 
       if (isMp4) {
-        // Try common MP4 variants if base video/mp4 fails check
-        if (!MediaRecorder.isTypeSupported("video/mp4")) {
-          if (MediaRecorder.isTypeSupported("video/mp4;codecs=avc1")) {
-            options = { mimeType: "video/mp4;codecs=avc1" };
-          } else if (MediaRecorder.isTypeSupported("video/x-matroska;codecs=avc1")) {
-             // Some browsers treat mp4 as matroska container with h264
-             options = { mimeType: "video/x-matroska;codecs=avc1" };
-          } else {
-            console.warn("MP4 not supported by this browser, falling back to WebM");
-            options = { mimeType: "video/webm" };
-          }
+        if (MediaRecorder.isTypeSupported("video/mp4;codecs=avc1")) {
+          resolvedMimeType = "video/mp4;codecs=avc1";
+        } else if (MediaRecorder.isTypeSupported("video/x-matroska;codecs=avc1")) {
+          resolvedMimeType = "video/x-matroska;codecs=avc1";
+        } else if (MediaRecorder.isTypeSupported("video/mp4")) {
+          resolvedMimeType = "video/mp4";
+        } else {
+          console.warn("Standard MP4 containers not supported; falling back to clean WebM format.");
+          resolvedMimeType = "video/webm;codecs=vp9";
         }
       } else {
-        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-          options = { mimeType: "video/webm" };
+        if (MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")) {
+          resolvedMimeType = "video/webm;codecs=vp9,opus";
+        } else if (MediaRecorder.isTypeSupported("video/webm;codecs=vp9")) {
+          resolvedMimeType = "video/webm;codecs=vp9";
+        } else if (MediaRecorder.isTypeSupported("video/webm")) {
+          resolvedMimeType = "video/webm";
+        } else {
+          resolvedMimeType = "video/webm";
         }
       }
+
+      const bitrateBps = getExportBitrateBps();
+      const options: MediaRecorderOptions = { 
+        mimeType: resolvedMimeType,
+        videoBitsPerSecond: bitrateBps 
+      };
 
       const recorder = new MediaRecorder(combinedStream, options);
       recorder.ondataavailable = (event) => {
@@ -1015,31 +1120,67 @@ export default function App() {
       };
 
       recorder.onstop = () => {
-        const extension = options.mimeType.includes("mp4") ? "mp4" : "webm";
-        const blob = new Blob(recordedChunksRef.current, { type: options.mimeType });
+        const extension = resolvedMimeType.includes("mp4") ? "mp4" : "webm";
+        const blob = new Blob(recordedChunksRef.current, { type: resolvedMimeType });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `retro_crt_overlay_${Date.now()}.${extension}`;
+        a.download = `crt_overlay_master_${Date.now()}.${extension}`;
         a.click();
         URL.revokeObjectURL(url);
       };
 
       mediaRecorderRef.current = recorder;
-      recorder.start(200); // 200ms slices
+
+      // Start recording animation copying loop to draw active viewfinder canvas into offscreen canvas
+      const copyFrame = () => {
+        if (!canvasRef.current) return;
+        if (offscreenCtx) {
+          offscreenCtx.drawImage(canvasRef.current, 0, 0, targetW, targetH);
+        }
+        recordingAnimationRef.current = requestAnimationFrame(copyFrame);
+      };
+
+      if (recordingAnimationRef.current) {
+        cancelAnimationFrame(recordingAnimationRef.current);
+      }
+      recordingAnimationRef.current = requestAnimationFrame(copyFrame);
+
+      recorder.start(250); // 250ms chunks
 
       setRecDuration(0);
       setIsRecording(true);
 
+      if (recTimerRef.current) {
+        clearInterval(recTimerRef.current);
+      }
+
       recTimerRef.current = window.setInterval(() => {
-        setRecDuration((prev) => prev + 1);
+        setRecDuration((prev) => {
+          if (exportConfig.stopTrigger === "auto" && prev + 1 >= exportConfig.autoStopDuration) {
+            if (recTimerRef.current) {
+              clearInterval(recTimerRef.current);
+            }
+            stopRecordingVideo();
+            return prev + 1;
+          }
+          return prev + 1;
+        });
       }, 1000);
     } catch (err) {
       console.error("Failed to generate combined stream recorder:", err);
+      if (recordingAnimationRef.current) {
+        cancelAnimationFrame(recordingAnimationRef.current);
+        recordingAnimationRef.current = null;
+      }
     }
   };
 
   const stopRecordingVideo = () => {
+    if (recordingAnimationRef.current) {
+      cancelAnimationFrame(recordingAnimationRef.current);
+      recordingAnimationRef.current = null;
+    }
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
@@ -1049,34 +1190,48 @@ export default function App() {
     }
   };
 
-  // Progressive transparent/normal GIF exporter
+  // Progressive transparent/normal GIF exporter with offscreen high-quality upscale support
   const captureGifSequence = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     setGifProgress(0);
-    const framesToCapture = 36; // ~1.5 seconds at 24fps
+    
+    let framesToCapture = 36;
+    if (exportConfig.gifLength === "medium") framesToCapture = 72;
+    if (exportConfig.gifLength === "long") framesToCapture = 120;
+    
     const capturedImages: string[] = [];
     let curFrame = 0;
 
+    const { w: targetW, h: targetH } = getExportDimensions();
+
+    // Create an offscreen canvas for frame resizing
+    const resizeCanvas = document.createElement("canvas");
+    resizeCanvas.width = targetW;
+    resizeCanvas.height = targetH;
+    const resizeCtx = resizeCanvas.getContext("2d");
+    if (resizeCtx) {
+      resizeCtx.imageSmoothingEnabled = true;
+      resizeCtx.imageSmoothingQuality = "high";
+    }
+
     const grabFrame = () => {
       if (curFrame >= framesToCapture) {
-        // Compile captured array using gifshot client script
         setGifProgress(85);
         gifshot.createGIF(
           {
             images: capturedImages,
-            gifWidth: settings.canvasWidth,
-            gifHeight: settings.canvasHeight,
-            interval: 1 / settings.exportFps,
+            gifWidth: targetW,
+            gifHeight: targetH,
+            interval: 1 / exportConfig.fps,
             numFrames: framesToCapture,
-            // Uses black as a standard background for contrast, or supports transparency based on canvas type
           },
           (obj) => {
             if (!obj.error) {
               const a = document.createElement("a");
               a.href = obj.image;
-              a.download = `vintage_vhs_loop_${Date.now()}.gif`;
+              a.download = `vhs_simulation_loop_${Date.now()}.gif`;
               a.click();
             } else {
               console.error("Gifshot error:", obj.error);
@@ -1087,13 +1242,14 @@ export default function App() {
         return;
       }
 
-      // Snapshot a clean dataUrl representation
-      capturedImages.push(canvas.toDataURL("image/png"));
+      if (canvasRef.current && resizeCtx) {
+        resizeCtx.drawImage(canvasRef.current, 0, 0, targetW, targetH);
+        capturedImages.push(resizeCanvas.toDataURL("image/png"));
+      }
       curFrame++;
       setGifProgress(Math.round((curFrame / framesToCapture) * 80));
 
-      // Schedule next fast snapshot
-      setTimeout(grabFrame, 1000 / settings.exportFps);
+      setTimeout(grabFrame, 1000 / exportConfig.fps);
     };
 
     grabFrame();
@@ -1334,7 +1490,7 @@ export default function App() {
 
             {/* PHYSICAL CRT BEZEL CONTROL RAIL (Directly under the screen!) */}
               <div 
-                className="w-full bg-gradient-to-b from-zinc-900 to-zinc-950 border-x border-b border-zinc-800 rounded-b-md p-3.5 shadow-2xl font-mono text-xs flex flex-row items-center justify-between gap-4 transition-all"
+                className="w-full bg-gradient-to-b from-zinc-900 to-zinc-950 border-x border-b border-zinc-800 rounded-b-md p-2 shadow-xl font-mono text-xs flex flex-row items-center justify-between gap-4 transition-all"
               >
                 {/* Retro Logo & Power Indicator */}
                 <div className="flex items-center gap-3 select-none">
@@ -1355,6 +1511,36 @@ export default function App() {
                     <span className="text-[9px] font-extrabold tracking-[0.2em] text-zinc-400 uppercase leading-none">TRINITRON CUSTOM</span>
                     <span className="text-[7px] tracking-widest text-zinc-500 uppercase mt-0.5 font-bold leading-none">HIGH BEAM MONITOR REC</span>
                   </div>
+
+                  {/* Manual VHS Glitch tactile key */}
+                  <button
+                    type="button"
+                    onMouseDown={() => {
+                      setIsManualGlitchActive(true);
+                    }}
+                    onMouseUp={() => {
+                      setIsManualGlitchActive(false);
+                    }}
+                    onMouseLeave={() => {
+                      setIsManualGlitchActive(false);
+                    }}
+                    onTouchStart={(e) => {
+                      e.preventDefault();
+                      setIsManualGlitchActive(true);
+                    }}
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      setIsManualGlitchActive(false);
+                    }}
+                    className={`ml-3 px-2 py-0.5 rounded-sm font-extrabold border transition-all text-[8px] tracking-wider uppercase cursor-pointer relative select-none flex items-center gap-1 h-[18px] top-0 active:top-0.5 ${
+                      isManualGlitchActive 
+                        ? "bg-amber-500 border-amber-300 text-black shadow-[0_0_10px_rgba(245,158,11,0.8)] animate-pulse"
+                        : "bg-zinc-800 hover:bg-zinc-705 border-zinc-700 hover:border-zinc-500 text-amber-500 shadow-sm"
+                    }`}
+                    title="Simulate high-tension tape jump, h-sync tear, and magnetic tracking slip (Hold to sustain)"
+                  >
+                    <span>⚡ GLITCH</span>
+                  </button>
                 </div>
 
                 {/* Physical Power ON & Power OFF mechanical button keys */}
@@ -1373,7 +1559,7 @@ export default function App() {
                       }
                     }}
                     disabled={tvPowerState === "on" || tvPowerState === "turning_on" || tvPowerState === "turning_off"}
-                    className={`px-2.5 py-1 rounded-sm font-black border transition-all text-[9px] uppercase cursor-pointer flex items-center gap-1.5 relative top-0 active:top-0.5 ${
+                    className={`px-2 py-0.5 rounded-sm font-black border transition-all text-[9px] uppercase cursor-pointer flex items-center gap-1.5 relative top-0 active:top-0.5 ${
                       tvPowerState === "on"
                         ? "bg-zinc-950/40 border-zinc-900 text-zinc-650 cursor-default"
                         : "bg-zinc-800 hover:bg-zinc-750 border-zinc-700 hover:border-zinc-500 text-zinc-250 active:bg-zinc-900 shadow-md"
@@ -1395,7 +1581,7 @@ export default function App() {
                       }
                     }}
                     disabled={tvPowerState === "off" || tvPowerState === "turning_on" || tvPowerState === "turning_off"}
-                    className={`px-2.5 py-1 rounded-sm font-black border transition-all text-[9px] uppercase cursor-pointer flex items-center gap-1.5 relative top-0 active:top-0.5 ${
+                    className={`px-2 py-0.5 rounded-sm font-black border transition-all text-[9px] uppercase cursor-pointer flex items-center gap-1.5 relative top-0 active:top-0.5 ${
                       tvPowerState === "off"
                         ? "bg-zinc-950/40 border-zinc-900 text-zinc-650 cursor-default"
                         : "bg-red-950/40 hover:bg-red-900/50 border-red-900/60 hover:border-red-650 text-red-400 active:bg-zinc-950 shadow-md"
@@ -1406,213 +1592,88 @@ export default function App() {
                   </button>
                 </div>
               </div>
-            </div>
-
-            {/* TRINITRON ANALOG MEDIA DECK */}
-            {!isFullscreen && (
-              <div className="w-full bg-zinc-900 border border-zinc-800 rounded-sm p-4.5 mt-4 shadow-xl font-mono text-xs flex flex-col space-y-3.5 transition-all">
-                {/* Row 1: Deck Title */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-zinc-800 pb-2 gap-2">
-                  <div className="flex items-center gap-2 text-[11.5px] font-bold text-sky-450 uppercase tracking-widest">
-                    <Tv className="w-4 h-4 text-sky-400 animate-pulse" />
-                    <span>■ ANALOG VCR MEDIA CONTROLLER</span>
-                  </div>
-
-                  {/* PANIC IMAGE STABILIZER BUTTON */}
-                  <div className="flex items-center font-mono text-[11px]">
-                    {!panicConfirm ? (
-                      <button
-                        onClick={() => setPanicConfirm(true)}
-                        className="px-2.5 py-1 bg-red-950/70 hover:bg-red-900 border border-red-800/80 hover:border-red-500 text-red-500 hover:text-red-100 rounded-sm font-bold transition-all flex items-center gap-1.5 cursor-pointer uppercase shadow-lg text-[10px]"
-                        title="Instantly stop image wobbling and rolling/drifting anomalies"
-                      >
-                        <ShieldAlert className="w-3 h-3 text-red-400 animate-pulse" />
-                        <span>🚨 PANIC STABILIZE</span>
-                      </button>
-                    ) : (
-                      <div className="flex items-center gap-2 bg-red-950/95 border border-red-800 p-1 px-2 rounded-sm text-[10px]">
-                        <span className="text-red-300 font-bold">Reset Wobble & V-Sync?</span>
-                        <button
-                          onClick={handleStabilizeImage}
-                          className="px-2 py-0.5 bg-red-650 hover:bg-red-500 text-white font-extrabold rounded-sm cursor-pointer uppercase transition-all text-[9px]"
-                        >
-                          Confirm
-                        </button>
-                        <button
-                          onClick={() => setPanicConfirm(false)}
-                          className="px-1.5 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-sm cursor-pointer uppercase transition-all text-[9px]"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Row 2: Deck mechanical status or progress bar */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-center">
-                  {/* Play & Stop Buttons */}
-                  <div className="md:col-span-4 flex items-center gap-2 my-1">
+                            {/* ■ CAPTURE & EXPORT CONTROL BAY */}
+            <div className="w-full bg-zinc-900 border border-zinc-800 rounded-sm p-1.5 mt-2 shadow-md font-mono text-xs flex flex-wrap items-center justify-between gap-3 transition-all">
+              <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
+                <span className="text-[9px] text-zinc-500 font-bold tracking-wider mr-1 uppercase">● RECORDER:</span>
+                
+                {isRecording ? (
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={handleTogglePlay}
-                      className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold rounded-sm transition-all cursor-pointer shadow-md ${
-                        vidPlayState 
-                          ? "bg-amber-500 text-zinc-950 hover:bg-amber-400 font-extrabold shadow-[0_0_12px_rgba(245,158,11,0.4)]" 
-                          : "bg-zinc-800 text-zinc-200 hover:bg-zinc-700 hover:text-white"
-                      }`}
-                      title={vidPlayState ? "Pause playback" : "Start playback"}
+                      onClick={stopRecordingVideo}
+                      className="flex items-center gap-1.5 bg-rose-955 bg-rose-950 hover:bg-rose-900 border border-rose-800 px-3 py-1 text-[9px] font-bold text-rose-300 rounded-sm transition-all cursor-pointer shadow-md"
                     >
-                      {vidPlayState ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-current" />}
-                      <span>{vidPlayState ? "PAUSE" : "PLAY VCR"}</span>
+                      <Square className="w-2.5 h-2.5 fill-current animate-pulse text-rose-500" />
+                      <span>STOP EXPORT ({parseSeconds(recDuration)})</span>
                     </button>
-                    <button
-                      onClick={handleStopVideo}
-                      className="flex-1 flex items-center justify-center gap-2 bg-zinc-800 hover:bg-rose-950/40 hover:text-rose-400 border border-zinc-750 px-3 py-2 text-xs text-zinc-300 font-bold rounded-sm transition-all cursor-pointer"
-                      title="Reset video to begin"
-                    >
-                      <Square className="w-3.5 h-3.5 fill-current" />
-                      <span>STOP</span>
-                    </button>
-                  </div>
-
-                  {/* Volume Slider Section */}
-                  <div className="md:col-span-4 flex items-center gap-2.5 bg-zinc-950/65 border border-zinc-850 p-2 rounded-sm">
-                    <button 
-                      onClick={() => handleVolumeChange(vidVolume > 0 ? 0 : 0.8)}
-                      className="text-zinc-400 hover:text-sky-400 cursor-pointer transition-colors shrink-0"
-                    >
-                      {vidVolume === 0 ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-                    </button>
-                    <div className="flex-1 flex flex-col">
-                      <div className="flex items-center justify-between text-[9px] font-bold text-zinc-500 mb-1 leading-none">
-                        <span>DECK VOL</span>
-                        <span className="text-sky-400">{Math.round(vidVolume * 100)}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="1"
-                        step="0.05"
-                        value={vidVolume}
-                        onChange={(e) => handleVolumeChange(Number(e.target.value))}
-                        className="w-full h-1 bg-zinc-900 accent-sky-400 rounded cursor-pointer"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Progressive track timeline scrubber or GIPHY paste form */}
-                  <div className="md:col-span-4 flex items-center gap-2 bg-zinc-950/65 border border-zinc-850 p-2 rounded-sm">
-                    <div className="flex-1 flex flex-col">
-                      <div className="flex items-center justify-between text-[9px] font-bold text-zinc-500 mb-1 leading-none">
-                        <span>VCR PLAYHEAD</span>
-                        <span className="text-amber-400">{parseSeconds(vidCurrentTime)} / {parseSeconds(vidDuration)}</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max={vidDuration || 1}
-                        step="0.1"
-                        value={vidCurrentTime}
-                        onChange={(e) => handleSeekVideo(Number(e.target.value))}
-                        className="w-full h-1 bg-zinc-900 accent-amber-500 rounded cursor-pointer"
-                        disabled={!vidDuration}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Drag & drop anywhere in player to load */}
-                <div className="pt-2 border-t border-zinc-800 flex items-center justify-center p-2">
-                  <p className="text-[10px] text-zinc-500 font-mono italic">
-                    (Drag & drop any media files or web links directly onto the player to load)
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Camera Access Error Alert */}
-            {cameraError && (
-              <div className="w-full mt-4 bg-rose-950/40 border border-rose-800 p-3 rounded-sm flex items-start gap-3 text-rose-200 animate-in fade-in slide-in-from-top-2 duration-300">
-                <ShieldAlert className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-[11px] font-bold uppercase tracking-tight">Lens Access Error</p>
-                  <p className="text-[10px] opacity-80">{cameraError}</p>
-                </div>
-                <button 
-                  onClick={() => setCameraError(null)}
-                  className="text-rose-400 hover:text-white"
-                >
-                  <Square className="w-3 h-3" />
-                </button>
-              </div>
-            )}
-
-            {/* LIVE VHS CAMERA CONTROLLER */}
-            {!isFullscreen && (
-              <div className="w-full bg-zinc-900 border border-zinc-800 rounded-sm p-4.5 mt-4 shadow-xl font-mono text-xs flex flex-col space-y-3.5 transition-all">
-                <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                  <div className="flex items-center gap-2 text-[11.5px] font-bold text-sky-450 uppercase tracking-widest">
-                    <Camera className="w-4 h-4 text-sky-400 animate-pulse" />
-                    <span>■ LIVE TELE-CINE VHS CAMERA PROCESSOR</span>
-                  </div>
-                  {isCameraActive && (
-                    <span className="text-[10px] text-emerald-450 font-bold bg-emerald-950/20 px-2 py-0.5 rounded-sm border border-emerald-900 animate-pulse">
-                      ● CAMERA ACTIVE
+                    <span className="text-[8px] text-zinc-500 uppercase tracking-widest font-extrabold animate-pulse">
+                      🔴 EXPORTING {exportConfig.format.toUpperCase()} ({exportConfig.preset === "original" ? "ACTIVE" : exportConfig.preset.toUpperCase()})
                     </span>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Toggle camera feed as media source */}
-                  <button
-                    onClick={handleToggleCamera}
-                    className={`flex items-center justify-center gap-2 px-3.5 py-2.5 text-xs font-bold rounded-sm transition-all cursor-pointer shadow-md ${
-                      isCameraActive && settings.sourceType === "camera"
-                        ? "bg-rose-950 text-rose-400 border border-rose-900 hover:bg-rose-900 hover:text-white" 
-                        : "bg-emerald-600 text-zinc-950 hover:bg-emerald-500 font-extrabold shadow-[0_0_12px_rgba(16,185,129,0.3)]"
-                    }`}
-                  >
-                    <Video className="w-4 h-4" />
-                    <span>{(isCameraActive && settings.sourceType === "camera") ? "DISCONNECT OPTICS" : "CHOOSE / ACTIVATE CAMERA"}</span>
-                  </button>
-
-                  {/* Cycle/Switch lenses */}
-                  <button
-                    onClick={handleCycleCamera}
-                    disabled={!isCameraActive}
-                    className={`flex items-center justify-center gap-2 px-3.5 py-2.5 text-xs font-bold rounded-sm transition-all border ${
-                      isCameraActive 
-                        ? "bg-zinc-800 border-zinc-700 hover:bg-zinc-750 text-sky-400 hover:text-sky-300 cursor-pointer" 
-                        : "bg-zinc-950/45 border-zinc-900 text-zinc-650 cursor-not-allowed"
-                    }`}
-                    title="Cycle through all camera lenses on this device (Selfie vs Back camera)"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    <span>SWITCH / CYCLE CAMERA LENS</span>
-                  </button>
-                </div>
-
-                {isCameraActive && (
-                  <div className="bg-zinc-950/65 border border-zinc-850 p-2.5 rounded-sm flex flex-col space-y-1">
-                    <div className="flex items-center justify-between text-[10px] font-bold text-zinc-400">
-                      <span>ACTIVE LENS HARDWARE:</span>
-                      <span className="text-sky-400">
-                        {videoDevices.find(d => d.deviceId === activeCameraDeviceId)?.label || "Default Selfie Lens"}
-                      </span>
-                    </div>
-                    {videoDevices.length > 1 ? (
-                      <p className="text-[9px] text-zinc-500">
-                        We detected {videoDevices.length} available camera lenses. Tap "SWITCH / CYCLE CAMERA LENS" above to switch between Front (Selfie) and Rear-facing lenses!
-                      </p>
-                    ) : (
-                      <p className="text-[9px] text-zinc-500">
-                        Switched active stream hardware dynamically. Multiple hardware devices available for seamless cycle swap tracking.
-                      </p>
-                    )}
                   </div>
+                ) : (
+                  <button
+                    onClick={() => setShowExportModal(true)}
+                    className="flex items-center gap-1.5 bg-gradient-to-r from-sky-950 to-indigo-950 hover:from-sky-900 hover:to-indigo-900 px-3 py-1 text-[9px] text-sky-350 rounded-sm border border-sky-800 transition-all cursor-pointer font-bold shadow-sm hover:text-sky-200"
+                  >
+                    <Video className="w-2.5 h-2.5 text-sky-450" />
+                    <span>🎬 EXPORT VIDEO / GIF...</span>
+                  </button>
                 )}
               </div>
-            )}
+              <div className="flex items-center gap-3">
+                <span className="text-[9px] text-zinc-500">
+                  FRM: <span className="text-zinc-350">{renderedFrames}</span>
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setIsFullscreen(!isFullscreen)}
+                  className="p-1 bg-zinc-90 w bg-zinc-900 border border-zinc-800 rounded-sm text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 flex items-center justify-center cursor-pointer transition-all"
+                  title="Toggle immersive display screen focus"
+                >
+                  {isFullscreen ? <Minimize2 className="w-3 h-3 text-sky-450" /> : <Maximize2 className="w-3 h-3" />}
+                </button>
+              </div>
+            </div>
+
+            {/* TRINITRON ANALOG MEDIA DECK & CAMERA PANEL */}
+            <VcrController
+              isFullscreen={isFullscreen}
+              settings={settings}
+              handleSettingsChange={handleSettingsChange}
+              vidPlayState={vidPlayState}
+              vidCurrentTime={vidCurrentTime}
+              vidDuration={vidDuration}
+              vidVolume={vidVolume}
+              handleTogglePlay={handleTogglePlay}
+              handleStopVideo={handleStopVideo}
+              handleSeekVideo={handleSeekVideo}
+              handleVolumeChange={handleVolumeChange}
+              panicConfirm={panicConfirm}
+              setPanicConfirm={setPanicConfirm}
+              handleStabilizeImage={handleStabilizeImage}
+              cameraError={cameraError}
+              setCameraError={setCameraError}
+              isCameraActive={isCameraActive}
+              handleToggleCamera={handleToggleCamera}
+              handleCycleCamera={handleCycleCamera}
+            />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
             {/* 4 Assignable Analog Macro Potentiometers & Sizing Console */}
             <div className="w-full">
@@ -1625,77 +1686,16 @@ export default function App() {
               />
             </div>
 
-            {/* HUD Viewport Controls Bar under monitor */}
-            <div className="mt-4 flex flex-wrap items-center justify-center w-full gap-4 px-2">
-              <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 p-1.5 rounded-sm">
-                {isRecording ? (
-                  <button
-                    onClick={stopRecordingVideo}
-                    className="flex items-center gap-2 bg-rose-900/80 hover:bg-rose-800 px-3 py-1.5 text-xs font-mono font-bold text-rose-100 rounded-sm transition-all cursor-pointer shadow-md"
-                  >
-                    <Square className="w-3.5 h-3.5 fill-current" />
-                    <span>STOP ({parseSeconds(recDuration)})</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={startRecordingVideo}
-                    className="flex items-center gap-2 bg-emerald-900 hover:bg-emerald-800 px-3 py-1.5 text-xs font-mono text-emerald-100 rounded-sm transition-all cursor-pointer shadow-sm hover:scale-[1.02]"
-                  >
-                    <Video className="w-3.5 h-3.5" />
-                    <span>RECORD {settings.exportFormat?.toUpperCase() || "VIDEO"}</span>
-                  </button>
-                )}
-
-                {/* Export format switcher */}
-                <div className="flex bg-zinc-950 border border-zinc-800 rounded-sm overflow-hidden h-[30px] my-auto">
-                  <button 
-                    onClick={() => handleSettingsChange({ exportFormat: "webm" })}
-                    className={`px-2 text-[9px] font-mono font-bold border-r border-zinc-800 transition-all cursor-pointer ${settings.exportFormat === "webm" ? "bg-sky-900/40 text-sky-300" : "text-zinc-600 hover:text-zinc-400"}`}
-                  >
-                    WEBM
-                  </button>
-                  <button 
-                    onClick={() => handleSettingsChange({ exportFormat: "mp4" })}
-                    className={`px-2 text-[9px] font-mono font-bold transition-all cursor-pointer ${settings.exportFormat === "mp4" ? "bg-sky-900/40 text-sky-300" : "text-zinc-600 hover:text-zinc-400"}`}
-                  >
-                    MP4
-                  </button>
-                </div>
-
-                <button
-                  onClick={captureGifSequence}
-                  disabled={gifProgress >= 0}
-                  className="flex items-center gap-2 hover:bg-zinc-800/80 text-sky-400 px-3 py-1.5 text-xs font-mono rounded-sm transition-all cursor-pointer disabled:opacity-40"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>EXPORT VHS-GIF</span>
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2 font-mono">
-                <span className="text-[10px] text-zinc-500 mr-2">
-                  FRAMES: {renderedFrames}
-                </span>
-
-                <button
-                  onClick={() => setIsFullscreen(!isFullscreen)}
-                  className="p-2 bg-zinc-900 border border-zinc-800 rounded-sm text-zinc-400 hover:text-zinc-100 font-bold hover:bg-zinc-800 flex items-center justify-center cursor-pointer transition-all"
-                  title="Toggle immersive display screen focus"
-                >
-                  {isFullscreen ? <Minimize2 className="w-4 h-4 text-sky-450" /> : <Maximize2 className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
             {/* Instruction if fullscreen active */}
             {isFullscreen && (
-              <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-950/90 border border-zinc-800 px-4 py-2 rounded-full shadow-2xl z-[100] text-[10px] font-mono text-zinc-400 flex items-center gap-2 pointer-events-none backdrop-blur-md">
+              <div className="fixed top-3 right-3 bg-zinc-950/95 border border-zinc-800 px-3 py-1.5 rounded-sm shadow-2xl z-[100] text-[9.5px] font-mono text-zinc-400 flex items-center gap-1.5 pointer-events-none backdrop-blur-md uppercase tracking-wider">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 <span>EXIT: ESC OR MINIMIZE</span>
               </div>
             )}
           </div>
         </div>
+      </div>
 
         {/* CONTROLS SLIDERS COLUMN */}
         <div className="w-full lg:w-[480px] xl:w-[540px] shrink-0 p-5 bg-zinc-950 border-t lg:border-t-0 flex flex-col h-full min-h-0 [scrollbar-width:thin] [scrollbar-color:theme(colors.zinc.800)_theme(colors.zinc.950)]">
@@ -1834,7 +1834,29 @@ export default function App() {
           }
         }}
         resetSyncTrigger={syncReset}
+        tvPowerState={tvPowerState}
+        manualGlitch={isManualGlitchActive}
       />
+
+      {/* High Fidelity Export Configuration Modal HUD */}
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        exportConfig={exportConfig}
+        setExportConfig={setExportConfig}
+        settingsWidth={settings.canvasWidth}
+        settingsHeight={settings.canvasHeight}
+        onStartExport={() => {
+          setShowExportModal(false);
+          if (exportConfig.format === "gif") {
+            captureGifSequence();
+          } else {
+            startRecordingVideo();
+          }
+        }}
+      />
+
+
     </div>
   );
 }

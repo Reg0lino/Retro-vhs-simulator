@@ -91,6 +91,7 @@ export interface SimulatorSettings {
   // 6. CRT Monitor Aesthetics
   scanlineOpacity: number;
   scanlineDensity: number;
+  scanlinesEnabled: boolean;
   crtCurvature: number; // Screen lens bend physical simulation
   crtVignette: number; // Corner overshadows
   grillMask: "none" | "aperture" | "shadow" | "slot";
@@ -132,8 +133,12 @@ export interface SimulatorSettings {
   canvasHeight: number;
   exportFps: number; // Frame rate for GIF/WebM exports
   exportFormat: "webm" | "mp4";
+  
+  // 10. Frame Transformations
+  flipHorizontal: boolean;
+  flipVertical: boolean;
 
-  // 10. Debugger Diagnostics Mode
+  // 11. Debugger Diagnostics Mode
   debugModeEnabled: boolean;
 
   // 11. Custom Quick Sliders
@@ -145,3 +150,17 @@ export interface PresetPreset {
   description: string;
   settings: Partial<SimulatorSettings>;
 }
+
+export interface ExportConfig {
+  format: "mp4" | "webm" | "gif";
+  preset: "original" | "485p" | "480p" | "720p" | "1080p" | "4k" | "custom";
+  customWidth: number;
+  customHeight: number;
+  fps: number;
+  bitrateLevel: "low" | "medium" | "high" | "cranked" | "ludicrous" | "custom";
+  customBitrate: number;
+  gifLength: "short" | "medium" | "long";
+  stopTrigger: "manual" | "auto";
+  autoStopDuration: number;
+}
+
