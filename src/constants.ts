@@ -67,7 +67,8 @@ export const SLIDER_OPTIONS: SliderConfig[] = [
   { key: "globalSaturation", label: "Color Saturation", min: 0, max: 200, step: 5, unit: "%", type: "slider", category: "Optics" },
   { key: "globalHueRotate", label: "Global Hue Tint", min: 0, max: 360, step: 5, unit: "°", type: "slider", category: "Optics" },
   { key: "ghostingCount", label: "Ghosting Count", min: 0, max: 5, step: 1, type: "slider", category: "Optics" },
-  { key: "ghostingOffset", label: "Ghosting Distance", min: 0, max: 100, step: 1, unit: "px", type: "slider", category: "Optics" },
+  { key: "ghostingOffsetX", label: "Ghosting Offset X", min: -100, max: 100, step: 1, unit: "px", type: "slider", category: "Optics" },
+  { key: "ghostingOffsetY", label: "Ghosting Offset Y", min: -100, max: 100, step: 1, unit: "px", type: "slider", category: "Optics" },
   { key: "ghostingStrength", label: "Ghosting Intensity", min: 0, max: 1, step: 0.05, type: "slider", category: "Optics" },
   { key: "phosphorTrails", label: "Phosphor Trails", min: 0, max: 0.95, step: 0.01, type: "slider", category: "Optics" },
 
@@ -76,13 +77,16 @@ export const SLIDER_OPTIONS: SliderConfig[] = [
   { key: "scanlinesEnabled", label: "Scanlines Enabled", min: 0, max: 1, step: 1, type: "toggle", category: "Display" },
   { key: "crtCurvature", label: "CRT Curvature", min: 0, max: 1, step: 0.01, type: "slider", category: "Display" },
   { key: "crtVignette", label: "CRT Vignette", min: 0, max: 2, step: 0.05, type: "slider", category: "Display" },
-  { key: "grillScale", label: "Grill/Mask Scale", min: 0.1, max: 5, step: 0.1, type: "slider", category: "Display" },
+  { key: "grillMask", label: "Grill/Mask Type", min: 0, max: 3, step: 1, type: "toggle", category: "Display" },
+  { key: "grillScale", label: "Grill/Mask Scale", min: 1.0, max: 5, step: 0.1, type: "slider", category: "Display" },
 
   { key: "osdEnabled", label: "OSD Enabled", min: 0, max: 1, step: 1, type: "toggle", category: "OSD" },
   { key: "osdSize", label: "OSD Text Size", min: 0.1, max: 3, step: 0.1, type: "slider", category: "OSD" },
   { key: "osdCustomY", label: "OSD Vertical Pos", min: 0, max: 1, step: 0.01, type: "slider", category: "OSD" },
   { key: "osdTextWobble", label: "OSD Text Drift", min: 0, max: 20, step: 0.5, type: "slider", category: "OSD" },
   { key: "osdTextWobbleSpeed", label: "OSD Drift Speed", min: 0, max: 10, step: 0.1, type: "slider", category: "OSD" },
+  { key: "osdBlur", label: "OSD Text Softness", min: 0, max: 5, step: 0.1, unit: "px", type: "slider", category: "OSD" },
+  { key: "osdPixelScale", label: "OSD Downscale", min: 1, max: 4, step: 1, type: "slider", category: "OSD" },
 
   { key: "blendOverlayOpacity", label: "Overlay Mix Intensity", min: 0, max: 1, step: 0.05, type: "slider", category: "Effects" },
   { key: "blendOverlayPulse", label: "Overlay Glow Pulse", min: 0, max: 1, step: 0.05, type: "slider", category: "Effects" },

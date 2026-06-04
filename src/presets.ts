@@ -82,7 +82,8 @@ export const DEFAULT_SETTINGS: SimulatorSettings = {
 
   // Ghosting / Multipath reflections
   ghostingCount: 1,
-  ghostingOffset: 25,
+  ghostingOffsetX: 25,
+  ghostingOffsetY: 0,
   ghostingStrength: 0.18,
   phosphorTrails: 0.12,
 
@@ -107,8 +108,8 @@ export const DEFAULT_SETTINGS: SimulatorSettings = {
   osdCustomY: 0.90,
   osdTextWobble: 0,
   osdTextWobbleSpeed: 2.0,
-
-  // Dynamic Multi-Exposure Blend overlay
+  osdBlur: 0,
+  osdPixelScale: 1,
   blendOverlayUrl: "",
   blendOverlayOpacity: 0.0,
   blendOverlayScale: 1.0,
@@ -128,7 +129,7 @@ export const DEFAULT_SETTINGS: SimulatorSettings = {
   flipHorizontal: false,
   flipVertical: false,
   debugModeEnabled: false,
-  customSliderSlots: ["hSyncSkew", "vSyncRoll", "scanlineOpacity", "crtCurvature", "fuzzOpacity", "needleNoise", "trackingDisplacementX", "chromaSmearFactor", "phosphorTrails", "scanlinesEnabled", "globalSaturation", "osdEnabled"],
+  customSliderSlots: ["hSyncSkew", "vSyncRoll", "scanlineOpacity", "crtCurvature", "fuzzOpacity", "needleNoise", "trackingDisplacementX", "chromaSmearFactor", "phosphorTrails", "scanlinesEnabled", "globalSaturation", "osdEnabled", "ghostingOffsetX", "ghostingOffsetY", "osdBlur", "osdPixelScale"],
 };
 
 export const BASE_INITIAL_STATE: SimulatorSettings = {
@@ -136,11 +137,18 @@ export const BASE_INITIAL_STATE: SimulatorSettings = {
   sourceType: "camera",
   sourceColor: "#05051a",
 
-  // RESET ALL WAVES
+  // PERFORMANCE / DOWNSCALE
+  pixelScale: 2,
+
+  // RESET ALL WAVES (MOTION)
   hWaveAmp: 0,
+  hWaveFreq: 0.02,
+  hWaveSpeed: 2.0,
   vWaveAmp: 0,
+  vWaveFreq: 0.02,
+  vWaveSpeed: 2.0,
   
-  // RESET ALL WOBBLES
+  // RESET ALL WOBBLES (MOTION)
   globalWobbleAmpX: 0,
   globalWobbleAmpY: 0,
   globalWobbleFreqX: 3.5,
@@ -151,13 +159,23 @@ export const BASE_INITIAL_STATE: SimulatorSettings = {
   hSyncSkew: 0,
   vSyncRoll: 0,
 
-  // RESET ALL NOISE
+  // RESET ALL NOISE (STATIC)
   fuzzOpacity: 0,
+  fuzzSize: 2,
+  fuzzSpeed: 1.2,
+  fuzzColorRatio: 0.2,
   needleNoise: 0,
+  needleNoiseDensity: 0.2,
+  thermalNoiseFreq: 0,
+  
+  // RESET ALL TRACKING (STATIC)
   trackingLinesCount: 0,
+  trackingBlockY: 0.8,
   trackingBlockHeight: 0,
   trackingDisplacementX: 0,
+  trackingScrollSpeed: 0,
   trackingNoiseDensity: 0.1,
+  trackingFuzzOpacity: 0,
   
   // RESET ALL COLOR SHIFTS TO NEUTRAL
   globalHueRotate: 0,
@@ -178,21 +196,31 @@ export const BASE_INITIAL_STATE: SimulatorSettings = {
   
   // SCANLINES / GRILL (Reset to moderate defaults)
   scanlineOpacity: 0.3,
+  scanlineDensity: 480,
   scanlinesEnabled: true,
   grillMask: "none",
   crtCurvature: 0.05,
   crtVignette: 0.3,
-  pixelScale: 1,
+  grillScale: 1.0,
 
   // GHOSTING
   ghostingCount: 0,
+  ghostingOffsetX: 25,
+  ghostingOffsetY: 0,
   ghostingStrength: 0,
   phosphorTrails: 0,
-  ghostingOffset: 25,
 
   // OSD
   osdEnabled: true,
-  osdCustomDate: "CALIBRATION MODE"
+  osdCustomDate: "CALIBRATION MODE",
+  osdText: "PLAY",
+  osdChannel: "AV 1",
+  osdSize: 1.0,
+  osdTextWobble: 0,
+  osdTextWobbleSpeed: 2.0,
+
+  // OVERLAY
+  blendOverlayOpacity: 0,
 };
 
 export const PRESETS: Record<string, { name: string; description: string; settings: Partial<SimulatorSettings> }> = {
@@ -207,33 +235,14 @@ export const PRESETS: Record<string, { name: string; description: string; settin
       vWaveFreq: 0.005,
       vWaveSpeed: 1,
       ghostingCount: 4,
-      ghostingOffset: 40,
+      ghostingOffsetX: 40,
+      ghostingOffsetY: 0,
       ghostingStrength: 0.4,
       phosphorTrails: 0.85,
       fuzzOpacity: 0.08,
       grillMask: "none",
       osdEnabled: true,
       osdCustomDate: "SUB-ORBITAL"
-    }
-  },
-  acidGlitch: {
-    name: "Acid Trip Glitch",
-    description: "Hallucinogenic signal feedback. Cycling hues and extreme wave distortion.",
-    settings: {
-      globalHueRotate: 180,
-      globalSaturation: 250,
-      hWaveAmp: 40,
-      hWaveFreq: 0.05,
-      hWaveSpeed: 4,
-      vWaveAmp: 25,
-      vWaveFreq: 0.04,
-      vWaveSpeed: 3,
-      chromaPhaseShift: 180,
-      fuzzOpacity: 0.1,
-      trackingLinesCount: 3,
-      trackingBlockY: 0.45,
-      grillMask: "none",
-      osdEnabled: false
     }
   },
   arcticSignal: {
@@ -262,7 +271,8 @@ export const PRESETS: Record<string, { name: string; description: string; settin
       pixelScale: 6,
       phosphorTrails: 0.94,
       ghostingCount: 2,
-      ghostingOffset: 5,
+      ghostingOffsetX: 5,
+      ghostingOffsetY: 0,
       ghostingStrength: 0.8,
       globalContrast: 140,
       fuzzOpacity: 0,
@@ -405,6 +415,8 @@ export const PRESETS: Record<string, { name: string; description: string; settin
       hWaveAmp: 5,
       phosphorTrails: 0.98,
       ghostingCount: 3,
+      ghostingOffsetX: 25,
+      ghostingOffsetY: 0,
       trackingLinesCount: 1,
       trackingBlockY: 0.2,
       grillMask: "none",
@@ -857,7 +869,8 @@ export const PRESETS: Record<string, { name: string; description: string; settin
     settings: {
       pixelScale: 4,
       ghostingCount: 5,
-      ghostingOffset: 2,
+      ghostingOffsetX: 2,
+      ghostingOffsetY: 0,
       ghostingStrength: 0.9,
       lumaBleedThreshold: 0.05,
       chromaSmearFactor: 0.1,
@@ -931,7 +944,8 @@ export const PRESETS: Record<string, { name: string; description: string; settin
       phosphorTrails: 0.75,
       fuzzOpacity: 0,
       ghostingCount: 2,
-      ghostingOffset: 15,
+      ghostingOffsetX: 15,
+      ghostingOffsetY: 0,
       ghostingStrength: 0.25,
       osdEnabled: true,
       osdCustomDate: "CHILL MEMORIES"
@@ -967,7 +981,7 @@ export const PRESETS: Record<string, { name: string; description: string; settin
       scanlineOpacity: 0.8,
       scanlineDensity: 600,
       grillMask: "aperture",
-      grillScale: 0.5,
+      grillScale: 1.0,
       crtCurvature: 0.12,
       fuzzOpacity: 0.02,
       trackingLinesCount: 0,

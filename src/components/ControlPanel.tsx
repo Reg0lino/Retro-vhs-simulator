@@ -494,9 +494,27 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         {/* TAB 2: WOBBLE & JITTER */}
         {activeTab === "wobble" && (
           <div className="space-y-4">
-            <h3 className="text-xs font-mono uppercase text-sky-400 tracking-wider border-b border-slate-800 pb-1.5 font-bold">
-              Magnetic Wobbles & Subharmonic Drifts
-            </h3>
+            <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
+              <h3 className="text-xs font-mono uppercase text-sky-400 tracking-wider font-bold">
+                Magnetic Wobbles & Subharmonic Drifts
+              </h3>
+              <button
+                onClick={() => onChange({ 
+                  globalWobbleAmpX: 0, 
+                  globalWobbleAmpY: 0, 
+                  lineJitterStrength: 0,
+                  hSyncSkew: 0,
+                  vSyncRoll: 0,
+                  hWaveAmp: 0,
+                  vWaveAmp: 0
+                })}
+                className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition-colors uppercase font-bold tracking-tighter"
+                title="Reset synchronization and wobbles"
+              >
+                <RotateCcw size={10} />
+                Refresh Sync
+              </button>
+            </div>
 
             {/* Wobble Speed */}
             <div className="space-y-2">
@@ -803,9 +821,25 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         {/* TAB 3: STATIC & TAPE DROPOUTS */}
         {activeTab === "static" && (
           <div className="space-y-4">
-            <h3 className="text-xs font-mono uppercase text-sky-400 tracking-wider border-b border-slate-800 pb-1.5 font-bold">
-              Magnetic Oxide Noise & Dropouts
-            </h3>
+            <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
+              <h3 className="text-xs font-mono uppercase text-sky-400 tracking-wider font-bold">
+                Magnetic Oxide Noise & Dropouts
+              </h3>
+              <button
+                onClick={() => onChange({ 
+                  fuzzOpacity: 0, 
+                  needleNoise: 0, 
+                  thermalNoiseFreq: 0,
+                  trackingFuzzOpacity: 0,
+                  trackingNoiseDensity: 0.1
+                })}
+                className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition-colors uppercase font-bold tracking-tighter"
+                title="Reset noise and dropouts"
+              >
+                <RotateCcw size={10} />
+                Refresh Grain
+              </button>
+            </div>
 
             {/* Tape Snow / Fuzz Opacity */}
             <div className="space-y-2 p-3 bg-slate-950/60 rounded border border-slate-800">
@@ -1342,9 +1376,25 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         {/* TAB 5: CRT PHOSPHORS & ANTENNA GHOSTS */}
         {activeTab === "crt" && (
           <div className="space-y-4">
-            <h3 className="text-xs font-mono uppercase text-sky-400 tracking-wider border-b border-slate-800 pb-1.5 font-bold">
-              UHF Antenna Mutipath Reflections (Ghosting)
-            </h3>
+            <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
+              <h3 className="text-xs font-mono uppercase text-sky-400 tracking-wider font-bold">
+                UHF Antenna Mutipath Reflections (Ghosting)
+              </h3>
+              <button
+                onClick={() => onChange({ 
+                  ghostingCount: 0, 
+                  ghostingStrength: 0, 
+                  phosphorTrails: 0,
+                  crtCurvature: 0.05,
+                  crtVignette: 0.3
+                })}
+                className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition-colors uppercase font-bold tracking-tighter"
+                title="Reset CRT and optical ghosting"
+              >
+                <RotateCcw size={10} />
+                Refresh Optics
+              </button>
+            </div>
 
             {/* Ghost Count */}
             <div className="space-y-2 p-3 bg-slate-950/60 rounded border border-slate-800">
@@ -1363,39 +1413,56 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
               />
             </div>
 
-            {/* Ghost Offset & Strength */}
+            {/* Ghost Offset X & Y */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5 p-3 bg-slate-950/45 rounded border border-slate-800">
                 <div className="flex justify-between text-[11px] font-mono text-slate-300">
-                  <span>Multipathing Gap Span:</span>
-                  <span className="text-indigo-400">{settings.ghostingOffset}px</span>
+                  <span>Reflection Offset X:</span>
+                  <span className="text-indigo-400">{settings.ghostingOffsetX}px</span>
                 </div>
                 <input
                   type="range"
-                  min="5"
-                  max="70"
+                  min="-100"
+                  max="100"
                   step="1"
-                  value={settings.ghostingOffset}
-                  onChange={(e) => onChange({ ghostingOffset: Number(e.target.value) })}
+                  value={settings.ghostingOffsetX}
+                  onChange={(e) => onChange({ ghostingOffsetX: Number(e.target.value) })}
                   className="w-full accent-indigo-500 bg-slate-900 h-1.5 rounded"
                 />
               </div>
 
               <div className="space-y-1.5 p-3 bg-slate-950/45 rounded border border-slate-800">
                 <div className="flex justify-between text-[11px] font-mono text-slate-300">
-                  <span>Reflection Intensity:</span>
-                  <span className="text-indigo-400">{Math.round(settings.ghostingStrength * 100)}%</span>
+                  <span>Reflection Offset Y:</span>
+                  <span className="text-indigo-400">{settings.ghostingOffsetY}px</span>
                 </div>
                 <input
                   type="range"
-                  min="0"
-                  max="0.8"
-                  step="0.05"
-                  value={settings.ghostingStrength}
-                  onChange={(e) => onChange({ ghostingStrength: Number(e.target.value) })}
+                  min="-60"
+                  max="60"
+                  step="1"
+                  value={settings.ghostingOffsetY}
+                  onChange={(e) => onChange({ ghostingOffsetY: Number(e.target.value) })}
                   className="w-full accent-indigo-500 bg-slate-900 h-1.5 rounded"
                 />
               </div>
+            </div>
+
+            {/* Ghost Strength */}
+            <div className="space-y-1.5 p-3 bg-slate-950/45 rounded border border-slate-800">
+              <div className="flex justify-between text-[11px] font-mono text-slate-300">
+                <span>Reflection Intensity:</span>
+                <span className="text-indigo-400">{Math.round(settings.ghostingStrength * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="0.8"
+                step="0.05"
+                value={settings.ghostingStrength}
+                onChange={(e) => onChange({ ghostingStrength: Number(e.target.value) })}
+                className="w-full accent-indigo-500 bg-slate-900 h-1.5 rounded"
+              />
             </div>
 
             <h3 className="text-xs font-mono uppercase text-sky-400 tracking-wider border-b border-slate-800 pt-3 pb-1.5 font-bold">
@@ -1838,6 +1905,44 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                       onChange={(e) => onChange({ osdSize: Number(e.target.value) })}
                       className="w-full accent-sky-500 bg-slate-900 h-5"
                     />
+                  </div>
+                </div>
+                
+                {/* OSD Decoupled Distortions */}
+                <div className="pt-3 border-t border-slate-900/80 space-y-3">
+                  <span className="text-[10px] font-mono text-sky-400 uppercase tracking-tighter font-bold block">Exclusive OSD Signal Overrides (Decoupled from Global Blur/Scale)</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5 p-3 bg-slate-900/60 rounded border border-slate-800">
+                      <div className="flex justify-between text-[11px] font-mono text-slate-400">
+                        <span>Text Blur:</span>
+                        <span>{settings.osdBlur?.toFixed(1) || 0}px</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="5"
+                        step="0.1"
+                        value={settings.osdBlur || 0}
+                        onChange={(e) => onChange({ osdBlur: Number(e.target.value) })}
+                        className="w-full accent-teal-500 bg-slate-950 h-1 rounded"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 p-3 bg-slate-900/60 rounded border border-slate-800">
+                      <div className="flex justify-between text-[11px] font-mono text-slate-400">
+                        <span>Text Downscale:</span>
+                        <span>{settings.osdPixelScale || 1}x</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="1"
+                        max="4"
+                        step="1"
+                        value={settings.osdPixelScale || 1}
+                        onChange={(e) => onChange({ osdPixelScale: Number(e.target.value) })}
+                        className="w-full accent-teal-500 bg-slate-950 h-1 rounded"
+                      />
+                    </div>
                   </div>
                 </div>
 

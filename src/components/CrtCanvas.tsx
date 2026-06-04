@@ -47,6 +47,8 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
   const tempWarpCanvas2Ref = useRef<HTMLCanvasElement | null>(null);
   const needleCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const snowCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const osdCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const tempOsdCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const rollYRef = useRef<number>(0);
   const trackingOffsetRef = useRef<number>(0);
   const chromaOffsetRef = useRef<number>(0);
@@ -390,16 +392,7 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
       drawBaseLayer(bufferCtx, activeW, activeH, globalOffsetX, globalOffsetY, settings);
       bufferCtx.restore();
 
-      // --- NEW: Draw customizable OSD text & UI overlays BEFORE pixel & wave distortions ---
-      if (settings.osdEnabled) {
-        renderOsdUI(bufferCtx, activeW, activeH, frameCount, settings, scale);
-      }
-
-      if (settings.overlayType === "vhs_bezel") {
-        renderVhsBezelUI(bufferCtx, activeW, activeH, frameCount, settings, scale);
-      } else if (settings.overlayType === "record_osd") {
-        renderRecordOsdUI(bufferCtx, activeW, activeH, frameCount, settings, scale);
-      }
+      // (OSD and Overlay calls REMOVED from low-res buffer to preserve legibility)
 
       if (blendOverlayElement && blendOverlayElement.complete && blendOverlayElement.naturalWidth > 0 && settings.blendOverlayOpacity > 0) {
         bufferCtx.save();
@@ -488,9 +481,10 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
           // Under screen blend mode, draw shifted ghosts of the base layer
           bufferCtx.globalCompositeOperation = "screen";
           for (let i = 1; i <= settings.ghostingCount; i++) {
-            const shiftX = (i * settings.ghostingOffset) / scale;
+            const shiftX = (i * settings.ghostingOffsetX) / scale;
+            const shiftY = (i * settings.ghostingOffsetY) / scale;
             bufferCtx.globalAlpha = settings.ghostingStrength * Math.pow(0.50, i);
-            bufferCtx.drawImage(ghostTemp, shiftX, 0);
+            bufferCtx.drawImage(ghostTemp, shiftX, shiftY);
           }
           bufferCtx.restore();
         }
@@ -800,7 +794,42 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
       }
 
       // --- STAGE 7: Draw the Low-res Tape Buffer Canvas onto the High-res display Canvas with pixelated scale! ---
-      // Check for power state changes
+      // 1. Prepare Decoupled OSD & Overlays at their own resolution/blur
+      const osdPixelScale = settings.osdPixelScale || 1;
+      const oW = Math.max(16, Math.round(w / osdPixelScale));
+      const oH = Math.max(12, Math.round(h / osdPixelScale));
+      
+      const osdCanvas = getHelperCanvas(osdCanvasRef, oW, oH);
+      const osdCtx = getHelperContext(osdCanvasRef, oW, oH);
+      const osdHighResCanvas = getHelperCanvas(tempOsdCanvasRef, w, h);
+      const osdHighResCtx = getHelperContext(tempOsdCanvasRef, w, h);
+
+      if (osdCtx && osdHighResCtx) {
+        osdCtx.clearRect(0, 0, oW, oH);
+        
+        // Apply OSD-specific blur
+        const osdBlur = settings.osdBlur || 0;
+        osdCtx.filter = `blur(${osdBlur / osdPixelScale}px)`;
+
+        // Render variants into the OSD buffer
+        if (settings.osdEnabled) {
+          renderOsdUI(osdCtx, oW, oH, frameCount, settings, osdPixelScale);
+        }
+        if (settings.overlayType === "vhs_bezel") {
+          renderVhsBezelUI(osdCtx, oW, oH, frameCount, settings, osdPixelScale);
+        } else if (settings.overlayType === "record_osd") {
+          renderRecordOsdUI(osdCtx, oW, oH, frameCount, settings, osdPixelScale);
+        }
+        
+        osdCtx.filter = "none";
+        
+        // Upscale OSD to high-res for compositing into curvature loop
+        osdHighResCtx.clearRect(0, 0, w, h);
+        osdHighResCtx.imageSmoothingEnabled = false;
+        osdHighResCtx.drawImage(osdCanvas, 0, 0, w, h);
+      }
+
+      // 2. Check for power state changes
       const currentTvPowerState = tvPowerStateRef.current;
       if (currentTvPowerState !== lastPowerStateRef.current) {
         lastPowerStateRef.current = currentTvPowerState;
@@ -918,6 +947,7 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
           const domeYOffset = (Math.sin((i / slices) * Math.PI) - 0.5) * curvature * h * 0.35;
           const targetY = sy - domeYOffset;
 
+          // BACKGROUND SIGNAL
           ctx.drawImage(
             bufferCanvas,
             0,
@@ -929,11 +959,29 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
             targetW,
             sliceH + 1.2
           );
+
+          // OVERLAY OSD
+          if (settings.osdEnabled || settings.overlayType !== "none") {
+            ctx.drawImage(
+              osdHighResCanvas,
+              0,
+              sy,
+              w,
+              sliceH,
+              targetX,
+              targetY,
+              targetW,
+              sliceH + 1.2
+            );
+          }
         }
       } else {
         ctx.clearRect(0, 0, w, h);
         ctx.imageSmoothingEnabled = false;
         ctx.drawImage(bufferCanvas, 0, 0, w, h);
+        if (settings.osdEnabled || settings.overlayType !== "none") {
+          ctx.drawImage(osdHighResCanvas, 0, 0, w, h);
+        }
       }
 
       // --- STAGE 8: (Deprecated) ---

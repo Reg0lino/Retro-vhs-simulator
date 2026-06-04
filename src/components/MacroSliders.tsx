@@ -75,13 +75,27 @@ export const MacroSliders: React.FC<MacroSlidersProps> = ({
               <div className="flex items-center justify-between leading-none pt-0.5 text-[9.5px]">
                 <span className="text-zinc-500 uppercase tracking-widest font-mono">Value:</span>
                 <span className={`font-bold font-mono ${colorClass.split(" ")[1]}`}>
-                  {paramDef.type === "toggle" 
-                    ? (val ? "ON" : "OFF")
-                    : (typeof val === "number" ? val.toFixed(paramDef.step < 0.01 ? 3 : paramDef.step < 0.1 ? 2 : 1) : val)}
+                  {paramDef.key === "grillMask"
+                    ? (val || "none").toUpperCase()
+                    : paramDef.type === "toggle" 
+                      ? (val ? "ON" : "OFF")
+                      : (typeof val === "number" ? val.toFixed(paramDef.step < 0.01 ? 3 : paramDef.step < 0.1 ? 2 : 1) : val)}
                 </span>
               </div>
-
-              {paramDef.type === "toggle" ? (
+              
+              {paramDef.key === "grillMask" ? (
+                <button
+                  onClick={() => {
+                    const masks = ["none", "aperture", "shadow", "slot"];
+                    const currentIdx = masks.indexOf(val as string);
+                    const nextIdx = (currentIdx + 1) % masks.length;
+                    handleSettingsChange({ grillMask: masks[nextIdx] as any });
+                  }}
+                  className={`w-full font-bold rounded-sm border transition-all py-1 text-[9px] ${colorClass.split(" ")[1]} border-current bg-zinc-900`}
+                >
+                  NEXT MASK
+                </button>
+              ) : paramDef.type === "toggle" ? (
                 <button
                   onClick={() => handleSettingsChange({ [paramDef.key]: !val })}
                   className={`w-full font-bold rounded-sm border transition-all py-1 text-[9px] ${

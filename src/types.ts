@@ -84,7 +84,8 @@ export interface SimulatorSettings {
 
   // 5. CRT Phosphor Ghosting & Antenna Multipath (Double imaging)
   ghostingCount: number; // Number of duplicated ghost reflections
-  ghostingOffset: number; // Horizontal distance of ghosts
+  ghostingOffsetX: number; // Horizontal distance of ghosts
+  ghostingOffsetY: number; // Vertical distance of ghosts
   ghostingStrength: number; // Reflection intensity
   phosphorTrails: number; // Dynamic frame accumulation (phosphor decay lag)
 
@@ -112,6 +113,8 @@ export interface SimulatorSettings {
   osdCustomY: number; // Y coordinates from 0 to 1
   osdTextWobble: number; // Wobble drift strength
   osdTextWobbleSpeed: number; // Speed of text drift
+  osdBlur: number; // Dedicated blur override for OSD
+  osdPixelScale: number; // Dedicated pixelation override for OSD
 
   // Dynamic Multi-Exposure Blend overlay
   blendOverlayUrl: string; // Custom GIF/Image URL
