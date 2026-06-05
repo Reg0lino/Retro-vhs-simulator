@@ -21,7 +21,10 @@ interface CrtCanvasProps {
   resetSyncTrigger: number;
   tvPowerState: "on" | "off" | "turning_off" | "turning_on";
   manualGlitch: boolean;
+  filmFxActive: boolean;
   restartGifTrigger: number;
+  filmCountdownActive?: boolean;
+  onCountdownComplete?: () => void;
 }
 
 export const CrtCanvas: React.FC<CrtCanvasProps> = ({
@@ -38,7 +41,10 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
   resetSyncTrigger,
   tvPowerState,
   manualGlitch,
+  filmFxActive,
   restartGifTrigger,
+  filmCountdownActive = false,
+  onCountdownComplete,
 }) => {
   const trailCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const bufferCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -47,6 +53,7 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
   const tempWarpCanvas2Ref = useRef<HTMLCanvasElement | null>(null);
   const needleCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const snowCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const glowCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const osdCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const tempOsdCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const rollYRef = useRef<number>(0);
@@ -179,8 +186,26 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
 
   const manualGlitchRef = useRef<boolean>(manualGlitch);
   useEffect(() => {
+    // Detect glitch trigger RELEASE to reset vertical sync roll to zero
+    if (manualGlitchRef.current === true && manualGlitch === false) {
+      rollYRef.current = 0;
+    }
     manualGlitchRef.current = manualGlitch;
   }, [manualGlitch]);
+
+  const filmCountdownActiveRef = useRef<boolean>(filmCountdownActive);
+  const countdownStartRef = useRef<number | null>(null);
+  const lastCountdownFinishedTimeRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (filmCountdownActiveRef.current && !filmCountdownActive) {
+      lastCountdownFinishedTimeRef.current = performance.now();
+    }
+    filmCountdownActiveRef.current = filmCountdownActive;
+    if (!filmCountdownActive) {
+      countdownStartRef.current = null;
+    }
+  }, [filmCountdownActive]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -265,19 +290,24 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
       for (let k = 0; k < 5; k++) {
         const cacheImg = ctx.createImageData(activeW, activeH);
         const data = cacheImg.data;
-        const dropsCount = activeSettings.needleNoise * 35;
+        const dropsCount = activeSettings.needleNoise * 150; // Increased base count significantly
+        const maxLen = 4 + (activeSettings.needleNoiseDensity || 0.5) * 150; // Much longer streaks
+        const heightDev = activeSettings.needleNoiseDensity > 1 ? Math.floor(activeSettings.needleNoiseDensity) : 0;
         for (let s = 0; s < dropsCount; s++) {
           const ry = Math.floor(Math.random() * activeH);
-          const rx = Math.floor(Math.random() * (activeW - Math.min(25, activeW - 5)));
-          const length = 4 + Math.floor(Math.random() * 30);
+          const rx = Math.floor(Math.random() * (activeW - 5));
+          const length = 4 + Math.floor(Math.random() * maxLen);
           for (let l = 0; l < length; l++) {
-            const idx = (ry * activeW + (rx + l)) * 4;
-            if (idx >= 0 && idx < data.length) {
-              const val = Math.random() > 0.5 ? 255 : 30;
-              data[idx] = val;
-              data[idx + 1] = val;
-              data[idx + 2] = val;
-              data[idx + 3] = Math.random() * 200; // semi transparent dirt
+            // Draw possibly multiple lines of height for "fat" streaks
+            for(let hOffset = 0; hOffset <= heightDev; hOffset++) {
+                const idx = ((ry + hOffset) * activeW + (rx + l)) * 4;
+                if (idx >= 0 && idx < data.length) {
+                  const val = Math.random() > 0.3 ? 255 : 40; // Higher contrast
+                  data[idx] = val;
+                  data[idx + 1] = val;
+                  data[idx + 2] = val;
+                  data[idx + 3] = 200 + Math.random() * 55; // Much more opaque
+                }
             }
           }
         }
@@ -285,6 +315,97 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
       }
     };
     generateNeedles();
+
+    const drawFilmCountdown = (
+      g: CanvasRenderingContext2D,
+      w: number,
+      h: number,
+      frameCount: number,
+      offsetX: number,
+      offsetY: number
+    ) => {
+      const now = performance.now();
+      if (!countdownStartRef.current) {
+        countdownStartRef.current = now;
+      }
+      const elapsed = (now - countdownStartRef.current) / 1000;
+      
+      if (elapsed >= 9.0) {
+        if (onCountdownComplete) {
+          setTimeout(() => {
+            onCountdownComplete();
+          }, 0);
+        }
+        return;
+      }
+
+      g.fillStyle = "#111111";
+      g.fillRect(0, 0, w, h);
+
+      // During the final second (8.0 to 9.0), display a clean black frame
+      if (elapsed >= 8.0) {
+        return;
+      }
+
+      g.save();
+      g.translate(offsetX, offsetY);
+
+      const num = 8 - Math.floor(elapsed);
+      const cx = w / 2;
+      const cy = h / 2;
+
+      const r1 = Math.min(w, h) * 0.38;
+      const r2 = Math.min(w, h) * 0.34;
+
+      g.strokeStyle = "rgba(220, 220, 220, 0.55)";
+      g.lineWidth = 1.5;
+
+      g.beginPath();
+      g.arc(cx, cy, r1, 0, Math.PI * 2);
+      g.stroke();
+
+      g.beginPath();
+      g.arc(cx, cy, r2, 0, Math.PI * 2);
+      g.stroke();
+
+      g.beginPath();
+      g.moveTo(cx - r1 * 1.3, cy);
+      g.lineTo(cx - r1 * 0.2, cy);
+      g.moveTo(cx + r1 * 0.2, cy);
+      g.lineTo(cx + r1 * 1.3, cy);
+      
+      g.moveTo(cx, cy - r1 * 1.3);
+      g.lineTo(cx, cy - r1 * 0.2);
+      g.moveTo(cx, cy + r1 * 0.2);
+      g.lineTo(cx, cy + r1 * 1.3);
+      g.stroke();
+
+      const theta = (elapsed % 1.0) * 2 * Math.PI - Math.PI / 2;
+
+      g.fillStyle = "rgba(255, 255, 255, 0.08)";
+      g.beginPath();
+      g.moveTo(cx, cy);
+      g.arc(cx, cy, r1, -Math.PI / 2, theta, false);
+      g.closePath();
+      g.fill();
+
+      // Sweeping hand: a few pixels wide (5.5px) for high visibility
+      g.strokeStyle = "#ffffff";
+      g.lineWidth = 5.5;
+      g.beginPath();
+      g.moveTo(cx, cy);
+      g.lineTo(cx + Math.cos(theta) * r1, cy + Math.sin(theta) * r1);
+      g.stroke();
+
+      g.fillStyle = "#f3f4f6";
+      const fontSize = Math.round(Math.min(w, h) * 0.44);
+      g.font = `900 ${fontSize}px sans-serif`;
+      g.textAlign = "center";
+      g.textBaseline = "middle";
+      g.fillText(String(num), cx, cy);
+
+      g.restore();
+    };
 
     // Main render loop
     const render = () => {
@@ -312,6 +433,14 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
           settings.osdTextWobble = Math.max(baseSettings.osdTextWobble, 15);
         }
       }
+
+      if (filmFxActive) {
+        settings.filmFrameBurn = Math.max(baseSettings.filmFrameBurn || 0, 5.0);
+        settings.filmFrameJump = Math.max(baseSettings.filmFrameJump || 0, 5.0);
+        settings.filmEmulsion = Math.max(baseSettings.filmEmulsion || 0, 2.0);
+      }
+
+
 
       const w = settings.canvasWidth;
       const h = settings.canvasHeight;
@@ -362,10 +491,26 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
         if (chromaOffsetRef.current < 0) chromaOffsetRef.current += 360;
       }
 
-      // X/Y Wobble offset calculations
+      // X/Y Wobble & Film Mechanical offset calculations
       const time = frameCount * 0.03 * settings.globalWobbleSpeed;
       const globalOffsetX = (Math.sin(time * settings.globalWobbleFreqX) * settings.globalWobbleAmpX) / scale;
       const globalOffsetY = (Math.cos(time * settings.globalWobbleFreqY) * settings.globalWobbleAmpY) / scale;
+
+      // Film Mechanical Offsets (Phase 1)
+      const weaveX = (Math.sin(frameCount * 0.013) * settings.gateWeave * 8) / scale;
+      const weaveY = (Math.cos(frameCount * 0.017) * settings.gateWeave * 8) / scale;
+      const jitterY = (settings.filmJitter > 0 ? (Math.random() - 0.5) * settings.filmJitter * 12 : 0) / scale;
+      const jumpY = (settings.filmFrameJump > 0 && Math.random() < settings.filmFrameJump * 0.02) 
+        ? (Math.random() - 0.5) * settings.filmFrameJump * 45 
+        : 0;
+
+      const timeSinceCountdown = performance.now() - lastCountdownFinishedTimeRef.current;
+      const postCountdownJitterY = (timeSinceCountdown < 800)
+        ? ((Math.sin(frameCount * 0.5) * 20 * (1.0 - timeSinceCountdown / 800)) + ((Math.random() - 0.5) * 40 * (1.0 - timeSinceCountdown / 800))) / scale
+        : 0;
+
+      const totalOffsetX = globalOffsetX + weaveX;
+      const totalOffsetY = globalOffsetY + weaveY + jitterY + (jumpY / scale) + postCountdownJitterY;
 
       // Apply the global brightness, saturation, contrast, blur, and hue rotate filters natively using GPU-backed filter!
       const blurVal = settings.globalBlur / scale; // scale blur proportionally
@@ -389,7 +534,11 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
         if (settings.flipHorizontal) bufferCtx.translate(-activeW, 0);
         if (settings.flipVertical) bufferCtx.translate(0, -activeH);
       }
-      drawBaseLayer(bufferCtx, activeW, activeH, globalOffsetX, globalOffsetY, settings);
+      if (filmCountdownActiveRef.current) {
+        drawFilmCountdown(bufferCtx, activeW, activeH, frameCount, totalOffsetX, totalOffsetY);
+      } else {
+        drawBaseLayer(bufferCtx, activeW, activeH, totalOffsetX, totalOffsetY, settings);
+      }
       bufferCtx.restore();
 
       // (OSD and Overlay calls REMOVED from low-res buffer to preserve legibility)
@@ -711,7 +860,7 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
         if (needles) {
           bufferCtx.save();
           bufferCtx.globalCompositeOperation = "screen";
-          bufferCtx.globalAlpha = Math.min(1.0, settings.fuzzOpacity * 1.5);
+          bufferCtx.globalAlpha = Math.min(1.0, (settings.needleNoiseDensity || 0.5) * 1.5);
           const tempNeedle = getHelperCanvas(needleCanvasRef, activeW, activeH);
           const tnCtx = getHelperContext(needleCanvasRef, activeW, activeH);
           if (tnCtx) {
@@ -793,6 +942,9 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
         bufferCtx.restore();
       }
 
+      // --- STAGE 6.9: Film Surface Mechanical & Organic Artifacts (Phase 1) ---
+      renderFilmSurface(bufferCtx, activeW, activeH, frameCount, settings, scale, filmFxActive);
+
       // --- STAGE 7: Draw the Low-res Tape Buffer Canvas onto the High-res display Canvas with pixelated scale! ---
       // 1. Prepare Decoupled OSD & Overlays at their own resolution/blur
       const osdPixelScale = settings.osdPixelScale || 1;
@@ -812,13 +964,15 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
         osdCtx.filter = `blur(${osdBlur / osdPixelScale}px)`;
 
         // Render variants into the OSD buffer
-        if (settings.osdEnabled) {
-          renderOsdUI(osdCtx, oW, oH, frameCount, settings, osdPixelScale);
-        }
-        if (settings.overlayType === "vhs_bezel") {
-          renderVhsBezelUI(osdCtx, oW, oH, frameCount, settings, osdPixelScale);
-        } else if (settings.overlayType === "record_osd") {
-          renderRecordOsdUI(osdCtx, oW, oH, frameCount, settings, osdPixelScale);
+        if (!manualGlitchRef.current) {
+          if (settings.osdEnabled) {
+            renderOsdUI(osdCtx, oW, oH, frameCount, settings, osdPixelScale);
+          }
+          if (settings.overlayType === "vhs_bezel") {
+            renderVhsBezelUI(osdCtx, oW, oH, frameCount, settings, osdPixelScale);
+          } else if (settings.overlayType === "record_osd") {
+            renderRecordOsdUI(osdCtx, oW, oH, frameCount, settings, osdPixelScale);
+          }
         }
         
         osdCtx.filter = "none";
@@ -1554,6 +1708,284 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
       g.restore();
     };
 
+    /**
+     * Phase 1: Procedural Film Surface Generator
+     * Handles dust specks, vertical scratches, and organic halide-style grain.
+     */
+    const renderFilmSurface = (
+      g: CanvasRenderingContext2D,
+      w: number,
+      h: number,
+      curFrame: number,
+      settings: SimulatorSettings,
+      scale: number,
+      filmFxActive: boolean
+    ) => {
+      const s = settings;
+      // 0. Film Breath (Phase 2 - Flicker)
+      if (settings.filmBreath > 0) {
+        g.save();
+        const breathT = curFrame * 0.12; 
+        const flicker = (Math.sin(breathT) * 0.2 + Math.random() * 0.1) * settings.filmBreath;
+        g.globalCompositeOperation = flicker > 0 ? "screen" : "multiply";
+        g.globalAlpha = Math.abs(flicker) * 0.08;
+        g.fillStyle = flicker > 0 ? "white" : "black";
+        g.fillRect(0, 0, w, h);
+        g.restore();
+      }
+
+      // 0.25. Anamorphic Streaks (Phase 2)
+      if (settings.filmAnamorphic > 0) {
+        g.save();
+        g.globalCompositeOperation = "screen";
+        const streakCount = Math.floor(settings.filmAnamorphic * 2);
+        for (let i = 0; i < streakCount; i++) {
+          const sy = ((Math.sin(i * 1.7 + curFrame * 0.01) * 0.5 + 0.5) * h);
+          const intensity = (0.05 + Math.random() * 0.1) * settings.filmAnamorphic;
+          if (intensity <= 0) continue;
+          
+          const grad = g.createLinearGradient(0, sy, w, sy);
+          grad.addColorStop(0, "transparent");
+          grad.addColorStop(0.5, `rgba(100, 160, 255, ${intensity})`); 
+          grad.addColorStop(1, "transparent");
+          g.fillStyle = grad;
+          g.fillRect(0, sy - 1, w, 2);
+        }
+        g.restore();
+      }
+
+      // 0.5. Film Halation (Phase 2)
+      // Red glow around bright edges
+      if (settings.filmHalation > 0) {
+        // More robust Halation: blur then screen
+        g.save();
+        g.globalCompositeOperation = "screen";
+        g.globalAlpha = settings.filmHalation * 0.5;
+        // Sharper slider makes blur smaller (less blurry)
+        const blurAmount = (1 - (settings.filmBurnSharpness || 0.5)) * 10;
+        g.filter = `blur(${blurAmount * scale}px) brightness(1.1) saturate(1.5)`;
+        g.drawImage(g.canvas, 0, 0); 
+        g.restore();
+      }
+
+      // 0.5. Light Leaks (Phase 2)
+      if (settings.filmLightLeaks > 0) {
+        g.save();
+        g.globalCompositeOperation = "screen";
+        const leakTime = curFrame * 0.01;
+        const leaks = Math.floor(settings.filmLightLeaks + 1);
+        
+        for (let i = 0; i < leaks; i++) {
+          const intensity = (Math.sin(leakTime + i * 1.5) * 0.5 + 0.5) * settings.filmLightLeaks * 0.4;
+          if (intensity <= 0.01) continue;
+          
+          const angle = (Math.sin(leakTime * 0.3 + i) * Math.PI * 2);
+          const lx = w / 2 + Math.cos(angle) * w * 0.6;
+          const ly = h / 2 + Math.sin(angle) * h * 0.6;
+          const radius = w * (0.4 + Math.random() * 0.4);
+          
+          const grad = g.createRadialGradient(lx, ly, 0, lx, ly, radius);
+          grad.addColorStop(0, `rgba(255, ${60 + Math.random() * 60}, 20, ${intensity})`);
+          grad.addColorStop(1, "rgba(255, 40, 0, 0)");
+          
+          g.fillStyle = grad;
+          g.fillRect(0, 0, w, h);
+        }
+        g.restore();
+      }
+
+      // 1. Organic Film Grain (Phase 1)
+      // Different from CRT fuzz - grain is more "clumpy" and overlays existing content as dirt
+      if (settings.filmGrain > 0) {
+        g.save();
+        g.globalAlpha = settings.filmGrain * 0.25;
+        g.globalCompositeOperation = "multiply"; // Darkens like actual grain clumps
+        
+        const grainSize = settings.filmGrainSize || 1;
+        const gw = Math.max(1, Math.round(w / grainSize));
+        const gh = Math.max(1, Math.round(h / grainSize));
+        const grainImg = g.createImageData(gw, gh);
+        const data = grainImg.data;
+        
+        for (let i = 0; i < data.length; i += 4) {
+          const val = 120 + Math.random() * 100;
+          data[i] = val;
+          data[i + 1] = val;
+          data[i + 2] = val;
+          data[i + 3] = 255;
+        }
+        
+        // Draw grain to a small offscreen and back or directly if performance permits
+        // We use putImageData but grain needs movement
+        const tempGrainC = getHelperCanvas(snowCanvasRef, gw, gh);
+        const tgCtx = getHelperContext(snowCanvasRef, gw, gh);
+        if (tgCtx) {
+          tgCtx.putImageData(grainImg, 0, 0);
+          g.drawImage(tempGrainC, 0, 0, w, h);
+        }
+        g.restore();
+      }
+
+      // 2. Film Dust & Lint Specks
+      if (settings.filmDust > 0) {
+        g.save();
+        g.fillStyle = "rgba(0, 0, 0, 0.7)";
+        const dustCount = Math.floor(settings.filmDust * 3.5);
+        const dustBaseSize = settings.filmDustSize || 1.0;
+        for (let i = 0; i < dustCount; i++) {
+          if (Math.random() < 0.3) {
+            const dx = Math.random() * w;
+            const dy = Math.random() * h;
+            const dSize = (0.5 + Math.random() * 2.0) * dustBaseSize;
+            
+            // Randomly draw a dot or a tiny "hair" squiggle
+            if (Math.random() > 0.5) {
+              g.beginPath();
+              g.arc(dx, dy, dSize, 0, Math.PI * 2);
+              g.fill();
+            } else {
+              g.lineWidth = 0.5 * dustBaseSize;
+              g.beginPath();
+              g.moveTo(dx, dy);
+              g.lineTo(dx + (Math.random() - 0.5) * 5 * dustBaseSize, dy + (Math.random() - 0.5) * 5 * dustBaseSize);
+              g.stroke();
+            }
+          }
+        }
+        g.restore();
+      }
+
+      // 2.5. Emulsion Damage & Chemical Acid Spots (Phase 2 & 3)
+      if (settings.filmEmulsion > 0 || settings.filmChemicalSpots > 0) {
+        g.save();
+        const eSeed = (curFrame % 60);
+        
+        // Emulsion blobs
+        if (s.filmEmulsion > 0 && eSeed < 4) {
+          const ex = Math.random() * w;
+          const ey = Math.random() * h;
+          const eRadius = (15 + Math.random() * 50) * s.filmEmulsion;
+          const eOpacity = (0.05 + Math.random() * 0.2) * s.filmEmulsion;
+          const grad = g.createRadialGradient(ex, ey, 0, ex, ey, eRadius);
+          grad.addColorStop(0, `rgba(${130 + Math.random() * 40}, ${90 + Math.random() * 30}, 40, ${eOpacity})`);
+          grad.addColorStop(0.7, `rgba(${130 + Math.random() * 40}, ${90 + Math.random() * 30}, 40, ${eOpacity * 0.3})`);
+          grad.addColorStop(1, "transparent");
+          g.fillStyle = grad;
+          g.beginPath();
+          g.arc(ex, ey, eRadius, 0, Math.PI * 2);
+          g.fill();
+        }
+
+              // Chemical/Acid spots - more persistent small dark/light circles
+              if (s.filmChemicalSpots > 0) {
+                const spotCount = Math.floor(s.filmChemicalSpots * 1.5);
+                for (let i = 0; i < spotCount; i++) {
+                  if (Math.random() < 0.2) {
+                    const sx = Math.random() * w;
+                    const sy = Math.random() * h;
+                    const sRadius = (2.0 + Math.random() * 5.0) * s.filmChemicalSpots;
+                    const isDark = Math.random() > 0.4;
+                    g.fillStyle = isDark ? `rgba(20, 10, 5, ${0.3 + Math.random() * 0.4})` : `rgba(255, 255, 240, ${0.2 + Math.random() * 0.3})`;
+                    g.beginPath();
+                    // Varied, irregular spot shape using randomized quadratic curves
+                    const numShapes = Math.random() < 0.3 ? 2 : 1;
+                    for (let s_i = 0; s_i < numShapes; s_i++) {
+                      const offX = (Math.random() - 0.5) * sRadius;
+                      const offY = (Math.random() - 0.5) * sRadius;
+                      const rSub = sRadius * (0.8 + Math.random() * 0.4);
+                      g.moveTo(sx + offX + Math.random() * rSub, sy + offY);
+                      g.quadraticCurveTo(sx + offX + rSub, sy + offY - rSub, sx + offX - rSub, sy + offY - rSub);
+                      g.quadraticCurveTo(sx + offX - rSub * 1.5, sy + offY + rSub, sx + offX + Math.random() * rSub, sy + offY);
+                    }
+                    g.fill();
+                  }
+                }
+              }
+        g.restore();
+      }
+
+      // 2.6 Frame Burn (Splicing flashes)
+      if (s.filmFrameBurn > 0) {
+        const burnSeed = Math.random();
+        if (burnSeed < s.filmFrameBurn * 0.02) {
+          g.save();
+          g.globalCompositeOperation = "screen";
+          const burnOpac = 0.2 + (Math.random() * 0.5 * (s.filmFrameBurn / 5));
+          const hue = s.filmBurnHue || 30; // Default to orange
+          const sharpness = (s.filmBurnSharpness || 0.5) * 0.5; // Map 0-1 to something gradient-friendly (0-0.5)
+          
+          const grad = g.createLinearGradient(0, 0, w, 0);
+          grad.addColorStop(0, `hsla(${hue}, 100%, 50%, ${burnOpac})`);
+          grad.addColorStop(Math.max(0.1, sharpness), `hsla(${hue + 20}, 100%, 40%, ${burnOpac * 0.7})`);
+          grad.addColorStop(1, "transparent");
+          g.fillStyle = grad;
+          g.fillRect(0, 0, w, h);
+          g.restore();
+        }
+      }
+
+      // 3. Vertical Scratches (Moving/Glancing)
+      if (settings.filmScratches > 0) {
+        g.save();
+        const scratchCount = Math.floor(settings.filmScratches * 1.5);
+        const scratchWidth = settings.filmScratchesWidth || 0.5;
+        for (let i = 0; i < scratchCount; i++) {
+          // Scratches tend to persist in horizontal bands for a few frames
+          const scratchSeed = (curFrame + i * 1000) % 60;
+          if (scratchSeed < 15) {
+             const sx = (Math.sin(i * 123.456) * 0.5 + 0.5) * w;
+             const jitter = (Math.random() - 0.5) * 1.5;
+             
+             g.strokeStyle = Math.random() > 0.5 ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.1)";
+             g.lineWidth = (0.3 + Math.random() * 0.7) * scratchWidth * 2;
+             g.beginPath();
+             g.moveTo(sx + jitter, 0);
+             g.lineTo(sx + jitter, h);
+             g.stroke();
+          }
+        }
+        g.restore();
+      }
+
+      // 4. Lens Vignette (Phase 2 Improved - Iris Masking)
+      if (settings.filmVignette > 0) {
+        g.save();
+        const centerX = w / 2;
+        const centerY = h / 2;
+        
+        const strength = settings.filmVignette; // 0 to 1
+        // Sharpness 1.0 = hard edge. 
+        const sharpness = settings.filmVignetteSoftness ?? 0.5;
+        const radiusScale = settings.filmVignetteRadius ?? 1.0;
+        
+        // Define iris radius relative to screen size
+        const baseRadius = Math.min(w, h) * 0.65 * radiusScale;
+        
+        // Inner radius (where the image starts being hidden)
+        const outerRadius = baseRadius;
+        // If sharpness is 1, innerRadius should basically be outerRadius for a hard cut
+        const innerRadius = baseRadius * (1.0 - Math.pow(1.0 - sharpness, 3));
+
+        if (sharpness >= 0.99) {
+          // Absolute hard cut - draw a path to avoid gradient anti-aliasing artifacts
+          g.beginPath();
+          g.rect(0, 0, w, h);
+          g.arc(centerX, centerY, baseRadius, 0, Math.PI * 2, true);
+          g.fillStyle = `rgba(0,0,0,${strength})`;
+          g.fill();
+        } else {
+          const vGrad = g.createRadialGradient(centerX, centerY, innerRadius, centerX, centerY, outerRadius);
+          vGrad.addColorStop(0, "rgba(0,0,0,0)");
+          vGrad.addColorStop(1, `rgba(0,0,0,${strength})`);
+          
+          g.fillStyle = vGrad;
+          g.fillRect(0, 0, w, h);
+        }
+        
+        g.restore();
+      }
+    };
+
     render();
 
     return () => {
@@ -1564,7 +1996,7 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
         activeVideo.playbackRate = videoSpeed;
       }
     };
-  }, [settings.canvasWidth, settings.canvasHeight, settings.pixelScale, videoElement, webVideoElement, uploadedImageElement, blendOverlayElement, isRecording, canvasRef, videoSpeed]);
+  }, [settings.canvasWidth, settings.canvasHeight, settings.pixelScale, videoElement, webVideoElement, uploadedImageElement, blendOverlayElement, isRecording, canvasRef, videoSpeed, settings.needleNoise, settings.needleNoiseDensity, settings.fuzzColorRatio, settings.gateWeave, settings.filmJitter, settings.filmDust, settings.filmDustSize, settings.filmScratches, settings.filmScratchesWidth, settings.filmGrain, settings.filmGrainSize, settings.filmLightLeaks, settings.filmVignette, settings.filmVignetteRadius, settings.filmVignetteSoftness, settings.filmHalation, settings.filmBreath, settings.filmAnamorphic, settings.filmEmulsion, settings.filmFrameJump, settings.filmFrameBurn, settings.filmChemicalSpots, filmFxActive]);
 
   return null;
 };

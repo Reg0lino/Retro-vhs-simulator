@@ -71,7 +71,7 @@ export const VcrController: React.FC<VcrControllerProps> = ({
 
   return (
     <>
-      {/* TRINITRON ANALOG MEDIA DECK */}
+      {/* MEDIA DECK */}
       {!isFullscreen && (
         <div className="w-full bg-zinc-900 border border-zinc-800 rounded-sm p-2 mt-2 px-3 shadow-lg font-mono text-xs flex flex-col space-y-2 transition-all">
           {/* Row 1: Deck Title */}

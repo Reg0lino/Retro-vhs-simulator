@@ -38,8 +38,8 @@ export const SLIDER_OPTIONS: SliderConfig[] = [
   { key: "fuzzSize", label: "Fuzz Size", min: 1, max: 10, step: 1, type: "slider", category: "Noise" },
   { key: "fuzzSpeed", label: "Fuzz Speed", min: 0, max: 5, step: 0.1, type: "slider", category: "Noise" },
   { key: "fuzzColorRatio", label: "Fuzz Color Ratio", min: 0, max: 1, step: 0.05, type: "slider", category: "Noise" },
-  { key: "needleNoise", label: "Tape Dropouts (Needle)", min: 0, max: 1, step: 0.05, type: "slider", category: "Noise" },
-  { key: "needleNoiseDensity", label: "Needle Density", min: 0, max: 1, step: 0.05, type: "slider", category: "Noise" },
+  { key: "needleNoise", label: "Tape Dropouts (Needle)", min: 0, max: 5, step: 0.05, type: "slider", category: "Noise" },
+  { key: "needleNoiseDensity", label: "Needle Density", min: 0, max: 5, step: 0.05, type: "slider", category: "Noise" },
   { key: "thermalNoiseFreq", label: "RF Interference Pulse", min: 0, max: 1, step: 0.01, type: "slider", category: "Noise" },
 
   { key: "trackingLinesCount", label: "Tracking Lines Count", min: 0, max: 10, step: 1, type: "slider", category: "Tracking" },
@@ -100,6 +100,26 @@ export const SLIDER_OPTIONS: SliderConfig[] = [
   { key: "flipHorizontal", label: "Flip Horizontal", min: 0, max: 1, step: 1, type: "toggle", category: "System" },
   { key: "flipVertical", label: "Flip Vertical", min: 0, max: 1, step: 1, type: "toggle", category: "System" },
   { key: "debugModeEnabled", label: "Debug Grid", min: 0, max: 1, step: 1, type: "toggle", category: "System" },
+
+  { key: "gateWeave", label: "Gate Weave (Slow Drift)", min: 0, max: 5, step: 0.1, type: "slider", category: "Film" },
+  { key: "filmJitter", label: "Film Jitter (Vertical)", min: 0, max: 5, step: 0.1, type: "slider", category: "Film" },
+  { key: "filmDust", label: "Dust & Specks Density", min: 0, max: 5, step: 0.1, type: "slider", category: "Film" },
+  { key: "filmDustSize", label: "Dust Size", min: 0.5, max: 5, step: 0.1, type: "slider", category: "Film" },
+  { key: "filmScratches", label: "Vertical Scratches Density", min: 0, max: 5, step: 0.1, type: "slider", category: "Film" },
+  { key: "filmScratchesWidth", label: "Scratch Width", min: 0.1, max: 3, step: 0.1, type: "slider", category: "Film" },
+  { key: "filmGrain", label: "Film Grain Density", min: 0, max: 5, step: 0.1, type: "slider", category: "Film" },
+  { key: "filmGrainSize", label: "Grain Particle Size", min: 1, max: 4, step: 1, type: "slider", category: "Film" },
+  { key: "filmLightLeaks", label: "Light Leaks", min: 0, max: 5, step: 0.1, type: "slider", category: "Film" },
+  { key: "filmVignette", label: "Iris Lens Vignette", min: 0, max: 1, step: 0.01, type: "slider", category: "Film" },
+  { key: "filmVignetteRadius", label: "Iris Size", min: 0, max: 2, step: 0.01, type: "slider", category: "Film" },
+  { key: "filmVignetteSoftness", label: "Iris Edge Sharpness", min: 0, max: 1, step: 0.01, type: "slider", category: "Film" },
+  { key: "filmHalation", label: "Film Halation Glow", min: 0, max: 1, step: 0.05, type: "slider", category: "Film" },
+  { key: "filmBreath", label: "Film Breath (Flicker)", min: 0, max: 2, step: 0.1, type: "slider", category: "Film" },
+  { key: "filmAnamorphic", label: "Anamorphic Streaks", min: 0, max: 5, step: 0.1, type: "slider", category: "Film" },
+  { key: "filmEmulsion", label: "Emulsion Damage", min: 0, max: 5, step: 0.1, type: "slider", category: "Film" },
+  { key: "filmFrameJump", label: "Frame Vertical Jump", min: 0, max: 5, step: 0.1, type: "slider", category: "Film" },
+  { key: "filmFrameBurn", label: "Frame Burn Firing", min: 0, max: 5, step: 0.1, type: "slider", category: "Film" },
+  { key: "filmChemicalSpots", label: "Chemical Acid Spots", min: 0, max: 5, step: 0.1, type: "slider", category: "Film" },
 ];
 
 export const ASSIGNABLE_PARAMS = SLIDER_OPTIONS;

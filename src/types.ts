@@ -147,6 +147,30 @@ export interface SimulatorSettings {
 
   // 11. Custom Quick Sliders
   customSliderSlots: string[];
+
+  // 12. Film Artifacts (Mechanical)
+  gateWeave: number; // Slow mechanical drift
+  filmJitter: number; // Rapid vertical shaking
+  filmDust: number; // Random hair/dust specks
+  filmDustSize: number; // Size of specks
+  filmScratches: number; // Vertical scratch lines
+  filmScratchesWidth: number; // Width of scratches
+  filmGrain: number; // Organic silver halide grain
+  filmGrainSize: number; // Size of grain particles
+  filmLightLeaks: number; // Random orange/red color washes
+  filmVignette: number; // Strength/Opacity
+  filmVignetteRadius: number; // Size of the iris hole
+  filmVignetteSoftness: number; // Edge feathering
+  filmHalation: number; // Glow on bright edges
+  filmBreath: number; // Exposure/saturation pulsation
+  filmAnamorphic: number; // Horizontal lens streaks
+  filmEmulsion: number; // Large chemical blobs/damage
+  filmFrameJump: number; // Sudden vertical offsets
+  filmFrameBurn: number; // Random frame flashes (splicing)
+  filmBurnSharpness: number; // Sharpness of burn marks
+  filmBurnHue: number; // Hue of burn marks
+  filmChemicalSpots: number; // Organic spot density
+  filmFxActive: boolean;
 }
 
 export interface PresetPreset {

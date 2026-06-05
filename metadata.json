@@ -1,6 +1,6 @@
 {
-  "name": "Retro VHS Simulator",
-  "description": "An interactive 90s retro VHS video simulation tool featuring dynamic scanlines, adjustable tracking distortions, color offset sliders, custom OSD presets, and ambient synthesizer hums.",
+  "name": "Retro Video Engine",
+  "description": "An interactive retro CRT & VHS hardware simulation processor featuring dynamic tracking distortions, scanline phosphor structures, customizable OSD, classic roll-stabilized film countdowns, and dynamic film artifacting.",
   "requestFramePermissions": ["camera"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

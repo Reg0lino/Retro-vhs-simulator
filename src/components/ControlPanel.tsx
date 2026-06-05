@@ -103,6 +103,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
     { id: "color", label: "Color splits & Phase", icon: SlidersHorizontal },
     { id: "crt", label: "CRT & Ghosts", icon: Eye },
     { id: "osd", label: "Overlays & OSD Text", icon: Film },
+    { id: "film", label: "Film Artifacts", icon: Film },
   ];
 
   return (
@@ -254,13 +255,13 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
             onClick={onExportPresets}
             type="button"
             className="bg-zinc-900 hover:bg-zinc-850 border border-zinc-700 text-zinc-350 font-mono text-[10px] px-2 py-1 rounded cursor-pointer transition-all h-7"
-            title="Download your custom presets as a backup JSON file."
+            title="Exports all user presets"
           >
             📤 Export File
           </button>
 
           {/* Import custom presets JSON */}
-          <label className="bg-zinc-900 hover:bg-zinc-850 border border-zinc-700 text-zinc-350 font-mono text-[10px] px-2 py-1 rounded cursor-pointer transition-all h-7 flex items-center shrink-0" title="Load custom presets from a backup JSON file.">
+          <label className="bg-zinc-900 hover:bg-zinc-850 border border-zinc-700 text-zinc-350 font-mono text-[10px] px-2 py-1 rounded cursor-pointer transition-all h-7 flex items-center shrink-0" title="Imports all user tabs from file">
             Import File
             <input
               type="file"
@@ -307,7 +308,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 
       {/* 3. Sliders Panels content */}
       <div className="flex-1 p-5 overflow-y-auto space-y-5 bg-zinc-900/50 min-h-0 [scrollbar-width:thin] [scrollbar-color:theme(colors.zinc.800)_theme(colors.zinc.950)]">
-        
+        <>
         {/* TAB 1: MEDIA & SIGNAL */}
         {activeTab === "signal" && (
           <div className="space-y-4">
@@ -917,20 +918,38 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
             </h4>
 
             {/* Needle Noise Dropouts */}
-            <div className="space-y-2 p-3 bg-slate-950/60 rounded border border-slate-800">
-              <div className="flex justify-between text-xs font-mono text-slate-300">
-                <span>Tape Dropout Streaks (Needle Drops):</span>
-                <span className="text-teal-400 font-bold">{Math.round(settings.needleNoise * 100)}%</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-2 p-3 bg-slate-950/60 rounded border border-slate-800">
+                <div className="flex justify-between text-xs font-mono text-slate-300">
+                  <span>Dropout Streaks:</span>
+                  <span className="text-teal-400 font-bold">{Math.round(settings.needleNoise * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="5"
+                  step="0.05"
+                  value={settings.needleNoise}
+                  onChange={(e) => onChange({ needleNoise: Number(e.target.value) })}
+                  className="w-full accent-teal-500 bg-slate-950 h-5"
+                />
               </div>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.05"
-                value={settings.needleNoise}
-                onChange={(e) => onChange({ needleNoise: Number(e.target.value) })}
-                className="w-full accent-teal-500 bg-slate-950 h-5"
-              />
+
+              <div className="space-y-2 p-3 bg-slate-950/60 rounded border border-slate-800">
+                <div className="flex justify-between text-xs font-mono text-slate-300">
+                  <span>Needle Density (Width/Opacity):</span>
+                  <span className="text-teal-400 font-bold">{Math.round((settings.needleNoiseDensity || 0) * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="5"
+                  step="0.05"
+                  value={settings.needleNoiseDensity || 0}
+                  onChange={(e) => onChange({ needleNoiseDensity: Number(e.target.value) })}
+                  className="w-full accent-teal-500 bg-slate-950 h-5"
+                />
+              </div>
             </div>
 
             {/* Major Tracking distortion blocks detailed sliders */}
@@ -2049,6 +2068,406 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 
           </div>
         )}
+        {activeTab === "film" && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
+              <h3 className="text-xs font-mono uppercase text-orange-400 tracking-wider font-bold">
+                Celluloid & Mechanical Film Simulation
+              </h3>
+              <button
+                onClick={() => onChange({ 
+                  gateWeave: 0,
+                  filmJitter: 0,
+                  filmBreath: 0,
+                  filmDust: 0,
+                  filmDustSize: 1,
+                  filmScratches: 0,
+                  filmScratchesWidth: 0.5,
+                  filmGrain: 0,
+                  filmGrainSize: 1,
+                  filmLightLeaks: 0,
+                  filmVignette: 0,
+                  filmVignetteRadius: 1.0,
+                  filmVignetteSoftness: 0.5,
+                  filmHalation: 0,
+                  filmAnamorphic: 0,
+                  filmEmulsion: 0,
+                  filmFrameJump: 0,
+                  filmFrameBurn: 0,
+                  filmBurnSharpness: 0.5,
+                  filmBurnHue: 30,
+                  filmChemicalSpots: 0
+                })}
+                className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition-colors uppercase font-bold tracking-tighter"
+              >
+                <RotateCcw size={10} />
+                Reset Reel
+              </button>
+            </div>
+
+            {/* Gate Weave & Movement */}
+            <div className="p-3 bg-zinc-950/60 rounded border border-zinc-800 space-y-4">
+              <h4 className="text-xs font-mono text-orange-300 font-bold uppercase">Mechanical Projector Play</h4>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-mono text-slate-300">
+                  <span>Gate Weave (Slow Horizontal/Vertical Drift):</span>
+                  <span className="text-orange-400 font-bold">{settings.gateWeave.toFixed(1)}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  value={settings.gateWeave}
+                  onChange={(e) => onChange({ gateWeave: Number(e.target.value) })}
+                  className="w-full accent-orange-500 bg-zinc-900 h-5"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-mono text-slate-300">
+                  <span>Film Jitter (Rapid Vertical Shaking):</span>
+                  <span className="text-orange-400 font-bold">{settings.filmJitter.toFixed(1)}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  value={settings.filmJitter}
+                  onChange={(e) => onChange({ filmJitter: Number(e.target.value) })}
+                  className="w-full accent-orange-500 bg-zinc-900 h-5"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-mono text-slate-300">
+                  <span>Projector Breath (Subtle Exposure Flicker):</span>
+                  <span className="text-orange-400 font-bold">{settings.filmBreath.toFixed(1)}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  value={settings.filmBreath}
+                  onChange={(e) => onChange({ filmBreath: Number(e.target.value) })}
+                  className="w-full accent-orange-500 bg-zinc-900 h-5"
+                />
+              </div>
+            </div>
+
+            {/* Surface Artifacts */}
+            <div className="p-3 bg-zinc-950/60 rounded border border-zinc-800 space-y-4">
+              <h4 className="text-xs font-mono text-orange-300 font-bold uppercase">Surface & Chemical Wear</h4>
+
+              <div className="space-y-2 pb-2 border-b border-zinc-900/50">
+                <div className="flex justify-between text-xs font-mono text-slate-300">
+                  <span>Emulsion Damage (Chemical Stains / Blobs):</span>
+                  <span className="text-orange-400 font-bold">{settings.filmEmulsion.toFixed(1)}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  value={settings.filmEmulsion}
+                  onChange={(e) => onChange({ filmEmulsion: Number(e.target.value) })}
+                  className="w-full accent-orange-500 bg-zinc-900 h-5"
+                />
+              </div>
+
+              {/* Dust Controls */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2 border-b border-zinc-900/50">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-mono text-slate-300">
+                    <span>Dust Density:</span>
+                    <span className="text-orange-400 font-bold">{settings.filmDust.toFixed(1)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="5"
+                    step="0.1"
+                    value={settings.filmDust}
+                    onChange={(e) => onChange({ filmDust: Number(e.target.value) })}
+                    className="w-full accent-orange-500 bg-zinc-900 h-5"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-mono text-slate-300">
+                    <span>Dust Particle Size:</span>
+                    <span className="text-orange-400 font-bold">{settings.filmDustSize.toFixed(1)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="5"
+                    step="0.1"
+                    value={settings.filmDustSize}
+                    onChange={(e) => onChange({ filmDustSize: Number(e.target.value) })}
+                    className="w-full accent-orange-300 bg-zinc-900 h-5"
+                  />
+                </div>
+              </div>
+
+              {/* Scratch Controls */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2 border-b border-zinc-900/50">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-mono text-slate-300">
+                    <span>Vertical Scratches:</span>
+                    <span className="text-orange-400 font-bold">{settings.filmScratches.toFixed(1)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="5"
+                    step="0.1"
+                    value={settings.filmScratches}
+                    onChange={(e) => onChange({ filmScratches: Number(e.target.value) })}
+                    className="w-full accent-orange-500 bg-zinc-900 h-5"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-mono text-slate-300">
+                    <span>Scratch Width:</span>
+                    <span className="text-orange-400 font-bold">{settings.filmScratchesWidth.toFixed(1)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="3"
+                    step="0.1"
+                    value={settings.filmScratchesWidth}
+                    onChange={(e) => onChange({ filmScratchesWidth: Number(e.target.value) })}
+                    className="w-full accent-orange-300 bg-zinc-900 h-5"
+                  />
+                </div>
+              </div>
+
+              {/* Grain Controls */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-mono text-slate-300">
+                    <span>Film Grain Density:</span>
+                    <span className="text-orange-400 font-bold">{settings.filmGrain.toFixed(1)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="5"
+                    step="0.1"
+                    value={settings.filmGrain}
+                    onChange={(e) => onChange({ filmGrain: Number(e.target.value) })}
+                    className="w-full accent-orange-500 bg-zinc-900 h-5"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-mono text-slate-300">
+                    <span>Grain Clump Size:</span>
+                    <span className="text-orange-400 font-bold">{settings.filmGrainSize}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="4"
+                    step="1"
+                    value={settings.filmGrainSize}
+                    onChange={(e) => onChange({ filmGrainSize: Number(e.target.value) })}
+                    className="w-full accent-orange-300 bg-zinc-900 h-5"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* Optical & Chemical Wear */}
+            <div className="p-3 bg-zinc-950/60 rounded border border-zinc-800 space-y-4">
+              <h4 className="text-xs font-mono text-orange-300 font-bold uppercase">Optical & Chemical Wear</h4>
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-mono text-slate-300">
+                  <span>Anamorphic Lens Streaks (Horizontal Bloom):</span>
+                  <span className="text-orange-400 font-bold">{settings.filmAnamorphic.toFixed(1)}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  value={settings.filmAnamorphic}
+                  onChange={(e) => onChange({ filmAnamorphic: Number(e.target.value) })}
+                  className="w-full accent-orange-500 bg-zinc-900 h-5"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-mono text-slate-300">
+                  <span>Film Light Leaks (Orange Color Washes):</span>
+                  <span className="text-orange-400 font-bold">{settings.filmLightLeaks.toFixed(1)}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  value={settings.filmLightLeaks}
+                  onChange={(e) => onChange({ filmLightLeaks: Number(e.target.value) })}
+                  className="w-full accent-orange-500 bg-zinc-900 h-5"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-mono text-slate-300">
+                  <span>Film Halation (Edge Glow):</span>
+                  <span className="text-orange-400 font-bold">{Math.round(settings.filmHalation * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={settings.filmHalation}
+                  onChange={(e) => onChange({ filmHalation: Number(e.target.value) })}
+                  className="w-full accent-orange-500 bg-zinc-900 h-5"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-mono text-slate-300">
+                  <span>Chemical Acid Spots (Density):</span>
+                  <span className="text-orange-400 font-bold">{settings.filmChemicalSpots.toFixed(1)}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  value={settings.filmChemicalSpots}
+                  onChange={(e) => onChange({ filmChemicalSpots: Number(e.target.value) })}
+                  className="w-full accent-orange-500 bg-zinc-900 h-5"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-zinc-900/50">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-mono text-slate-300">
+                    <span>Frame Jumping:</span>
+                    <span className="text-orange-400 font-bold">{settings.filmFrameJump.toFixed(1)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="5"
+                    step="0.1"
+                    value={settings.filmFrameJump}
+                    onChange={(e) => onChange({ filmFrameJump: Number(e.target.value) })}
+                    className="w-full accent-orange-500 bg-zinc-900 h-5"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-mono text-slate-300">
+                    <span>Frame Burn Intensity:</span>
+                    <span className="text-orange-400 font-bold">{settings.filmFrameBurn.toFixed(1)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="5"
+                    step="0.1"
+                    value={settings.filmFrameBurn}
+                    onChange={(e) => onChange({ filmFrameBurn: Number(e.target.value) })}
+                    className="w-full accent-orange-500 bg-zinc-900 h-5"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-mono text-slate-300">
+                    <span>Burn Sharpness:</span>
+                    <span className="text-orange-400 font-bold">{settings.filmBurnSharpness.toFixed(2)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={settings.filmBurnSharpness}
+                    onChange={(e) => onChange({ filmBurnSharpness: Number(e.target.value) })}
+                    className="w-full accent-orange-500 bg-zinc-900 h-5"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-mono text-slate-300">
+                    <span>Burn Hue:</span>
+                    <span className="text-orange-400 font-bold">{settings.filmBurnHue.toFixed(0)}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="360"
+                    step="1"
+                    value={settings.filmBurnHue}
+                    onChange={(e) => onChange({ filmBurnHue: Number(e.target.value) })}
+                    className="w-full accent-orange-500 bg-zinc-900 h-5"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-mono text-slate-300">
+                    <span>Iris Strength (Blackness):</span>
+                    <span className="text-orange-400 font-bold">{Math.round(settings.filmVignette * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={settings.filmVignette}
+                    onChange={(e) => onChange({ filmVignette: Number(e.target.value) })}
+                    className="w-full accent-orange-500 bg-zinc-900 h-5"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-mono text-slate-300">
+                    <span>Iris Size:</span>
+                    <span className="text-orange-400 font-bold">{Math.round(settings.filmVignetteRadius * 50)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.05"
+                    max="2"
+                    step="0.01"
+                    value={settings.filmVignetteRadius}
+                    onChange={(e) => onChange({ filmVignetteRadius: Number(e.target.value) })}
+                    className="w-full accent-orange-300 bg-zinc-900 h-5"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-mono text-slate-300">
+                  <span>Iris Edge Sharpness:</span>
+                  <span className="text-orange-400 font-bold">{Math.round(settings.filmVignetteSoftness * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={settings.filmVignetteSoftness}
+                  onChange={(e) => onChange({ filmVignetteSoftness: Number(e.target.value) })}
+                  className="w-full accent-orange-500 bg-zinc-900 h-5"
+                />
+              </div>
+            </div>
+
+            <p className="text-[10px] text-zinc-500 font-mono italic leading-tight">
+              NOTE: Gate weave and jitter simulate the mechanical tension and loose film guides in vintage projectors.
+            </p>
+          </div>
+        )}
+        </>
       </div>
     </div>
   );

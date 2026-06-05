@@ -92,6 +92,8 @@ export default function App() {
   const [syncReset, setSyncReset] = useState<number>(0);
   const [tvPowerState, setTvPowerState] = useState<"on" | "off" | "turning_off" | "turning_on">("on");
   const [isManualGlitchActive, setIsManualGlitchActive] = useState<boolean>(false);
+  const [filmFxActive, setFilmFxActive] = useState<boolean>(false);
+  const [filmCountdownActive, setFilmCountdownActive] = useState<boolean>(false);
 
   const [favKeys, setFavKeys] = useState<string[]>(() => {
     try {
@@ -947,13 +949,34 @@ export default function App() {
       grillScale: () => 1.0 + Math.random() * 1.5,
       osdBlur: () => Math.random() < 0.8 ? 0 : Math.random() * 1.5,
       osdPixelScale: () => Math.random() < 0.9 ? 1 : 2,
+      // Film Effects (Phase 1)
+      gateWeave: () => Math.random() < 0.7 ? 0 : Math.random() * 2.0,
+      filmJitter: () => Math.random() < 0.8 ? 0 : Math.random() * 1.5,
+      filmDust: () => Math.random() < 0.5 ? 0 : Math.random() * 3.0,
+      filmDustSize: () => 0.5 + Math.random() * 1.5,
+      filmScratches: () => Math.random() < 0.6 ? 0 : Math.random() * 2.0,
+      filmScratchesWidth: () => 0.1 + Math.random() * 0.8,
+      filmGrain: () => Math.random() < 0.4 ? 0 : Math.random() * 2.5,
+      filmGrainSize: () => Math.floor(Math.random() * 3) + 1,
+      filmLightLeaks: () => Math.random() < 0.7 ? 0 : Math.random() * 3.0,
+      filmVignette: () => Math.random() < 0.6 ? 0 : Math.random() * 0.8,
+      filmVignetteSoftness: () => 0.2 + Math.random() * 0.8,
+      filmHalation: () => Math.random() < 0.8 ? 0 : Math.random() * 0.5,
+      filmBreath: () => Math.random() < 0.7 ? 0 : Math.random() * 1.5,
+      filmAnamorphic: () => Math.random() < 0.85 ? 0 : Math.random() * 4.0,
+      filmEmulsion: () => Math.random() < 0.9 ? 0 : Math.random() * 3.0,
+      filmFrameJump: () => Math.random() < 0.9 ? 0 : Math.random() * 5.0,
+      filmFrameBurn: () => Math.random() < 0.92 ? 0 : Math.random() * 5.0,
+      filmBurnSharpness: () => Math.random(),
+      filmBurnHue: () => Math.floor(Math.random() * 360),
+      filmChemicalSpots: () => Math.random() < 0.88 ? 0 : Math.random() * 4.0,
     };
 
     const randomSettings: Partial<SimulatorSettings> = {};
     // Randomize a random selection of sliders (roughly 70% of them each time)
     Object.entries(allPossibleUpdates).forEach(([key, getRandom]) => {
       if (Math.random() < 0.7) {
-        randomSettings[key as keyof SimulatorSettings] = getRandom();
+        (randomSettings as any)[key] = getRandom();
       }
     });
 
@@ -981,6 +1004,10 @@ export default function App() {
       trackingDisplacementX: 0,
       trackingScrollSpeed: 0,
       chromaScrollSpeed: 0,
+      gateWeave: 0,
+      filmJitter: 0,
+      filmFrameJump: 0,
+      filmBreath: 0,
     }));
     setSyncReset(prev => prev + 1);
     setPanicConfirm(false);
@@ -1509,9 +1536,8 @@ export default function App() {
                   
                   {/* Brand name */}
                   <div className="flex flex-col">
-                    <span className="text-[9px] font-extrabold tracking-[0.2em] text-zinc-400 uppercase leading-none">TRINITRON CUSTOM</span>
-                    <span className="text-[7px] tracking-widest text-zinc-500 uppercase mt-0.5 font-bold leading-none">HIGH BEAM MONITOR REC</span>
                   </div>
+
 
                   {/* Manual VHS Glitch tactile key */}
                   <button
@@ -1533,14 +1559,58 @@ export default function App() {
                       e.preventDefault();
                       setIsManualGlitchActive(false);
                     }}
-                    className={`ml-3 px-2 py-0.5 rounded-sm font-extrabold border transition-all text-[8px] tracking-wider uppercase cursor-pointer relative select-none flex items-center gap-1 h-[18px] top-0 active:top-0.5 ${
-                      isManualGlitchActive 
+                    className={`ml-2 px-2 py-0.5 rounded-sm font-extrabold border transition-all text-[8px] tracking-wider uppercase cursor-pointer relative select-none flex items-center gap-1 h-[18px] top-0 active:top-0.5 ${
+                      isManualGlitchActive
                         ? "bg-amber-500 border-amber-300 text-black shadow-[0_0_10px_rgba(245,158,11,0.8)] animate-pulse"
                         : "bg-zinc-800 hover:bg-zinc-705 border-zinc-700 hover:border-zinc-500 text-amber-500 shadow-sm"
                     }`}
                     title="Simulate high-tension tape jump, h-sync tear, and magnetic tracking slip (Hold to sustain)"
                   >
                     <span>⚡ GLITCH</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onMouseDown={() => {
+                      setFilmFxActive(true);
+                    }}
+                    onMouseUp={() => {
+                      setFilmFxActive(false);
+                    }}
+                    onMouseLeave={() => {
+                      setFilmFxActive(false);
+                    }}
+                    onTouchStart={(e) => {
+                      e.preventDefault();
+                      setFilmFxActive(true);
+                    }}
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      setFilmFxActive(false);
+                    }}
+                    className={`ml-2 px-2 py-0.5 rounded-sm font-extrabold border transition-all text-[8px] tracking-wider uppercase cursor-pointer relative select-none flex items-center gap-1 h-[18px] top-0 active:top-0.5 ${
+                      filmFxActive 
+                        ? "bg-rose-500 border-rose-300 text-white shadow-[0_0_10px_rgba(244,63,94,0.8)] animate-pulse"
+                        : "bg-zinc-800 hover:bg-zinc-705 border-zinc-700 hover:border-zinc-500 text-rose-500 shadow-sm"
+                    }`}
+                    title="Simulate heat-induced film damage and emulsion melt (Hold to sustain)"
+                  >
+                    <span>🔥 FILM FX</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFilmCountdownActive((prev) => !prev);
+                    }}
+                    className={`ml-2 px-2 py-0.5 rounded-sm font-extrabold border transition-all text-[8px] tracking-wider uppercase cursor-pointer relative select-none flex items-center gap-1 h-[18px] top-0 active:top-0.5 ${
+                      filmCountdownActive 
+                        ? "bg-cyan-500 border-cyan-300 text-black shadow-[0_0_10px_rgba(6,182,212,0.8)] animate-pulse"
+                        : "bg-zinc-800 hover:bg-zinc-705 border-zinc-700 hover:border-zinc-500 text-cyan-400 shadow-sm"
+                    }`}
+                    title="Toggle vintage SMPTE 8-to-2 circular film countdown screen leader (Auto stops)"
+                  >
+                    <span>🎬 COUNTDOWN</span>
                   </button>
                 </div>
 
@@ -1838,6 +1908,9 @@ export default function App() {
         resetSyncTrigger={syncReset}
         tvPowerState={tvPowerState}
         manualGlitch={isManualGlitchActive}
+        filmFxActive={filmFxActive}
+        filmCountdownActive={filmCountdownActive}
+        onCountdownComplete={() => setFilmCountdownActive(false)}
         restartGifTrigger={restartGifTrigger}
       />
 
