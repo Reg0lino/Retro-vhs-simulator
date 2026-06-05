@@ -1,7 +1,7 @@
 <div align="center">
-  <img width="1200" height="475" alt="VCR-96 Banner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
+  <img width="1200" height="475" alt="Retro Video Engine Banner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
 
-  # 📺 VCR-96: Retro VHS Simulator & CRT Studio
+  # 📺 Retro Video Engine
   ### 🌐 [EXPLORE LIVE DEPLOYMENT](https://retro-vhs-simulator-a9b35.web.app)
   
   [![Firebase](https://img.shields.io/badge/Hosted_on-Firebase-ffca28?style=flat-square&logo=firebase)](https://retro-vhs-simulator-a9b35.web.app)
@@ -13,9 +13,9 @@
   **Step into the grain.** A professional-grade analog signal distortion processor and CRT overlay studio designed to recreate the nostalgic imperfections of 90s magnetic tape media.
 </div>
 
-## 📼 What is VCR-96?
+## 📼 What is Retro Video Engine?
 
-VCR-96 is a high-fidelity simulation engine that transforms modern digital video into a vintage analog experience. Unlike simple CSS filters, VCR-96 utilizes the **HTML5 Canvas API** for real-time, pixel-level manipulation, allowing for authentic recreations of physical hardware artifacts.
+Retro Video Engine is a high-fidelity simulation engine that transforms modern digital video into a vintage analog experience. Unlike simple CSS filters, Retro Video Engine utilizes the **HTML5 Canvas API** for real-time, pixel-level manipulation, allowing for authentic recreations of physical hardware artifacts.
 
 ### 🕹️ Core Capabilities
 *   **Analog Signal Matrix:** Real-time emulation of magnetic tracking errors, head-switching noise, and horizontal/vertical sync jitter.

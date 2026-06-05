@@ -1275,7 +1275,7 @@ export default function App() {
           </div>
           <div>
             <h1 className="text-sm font-mono font-bold tracking-wider text-zinc-100 uppercase">
-              VCR-96 Tape Deck Sim
+              Retro Video Engine
             </h1>
             <p className="text-[10px] text-zinc-500 font-mono">
               PRO ANALOG SIGNAL DISTORTION PROCESSOR
