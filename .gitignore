@@ -1,18 +1,34 @@
+# Dependencies
 node_modules/
-build/
+
+# Build outputs
 dist/
+dist-ssr/
+build/
+
+# Testing
 coverage/
-.DS_Store
+
+# Logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 firebase-debug.log*
+vite.config.js.timestamp-*
+
+# Firebase
 .firebase/
+
+# Environment secrets (Critical for security)
 .env*
 !.env.example
+
+# Project specific
 CustomExports/
-# IDE and System files
+
+# OS and IDEs
 .vscode/
 .idea/
+.DS_Store
 Thumbs.db
