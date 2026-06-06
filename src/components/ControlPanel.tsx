@@ -98,16 +98,16 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
   // Navigation tabs configuration
   const tabs = [
     { id: "signal", label: "Media & Signal", icon: Tv },
-    { id: "wobble", label: "Wobble & Jitter", icon: Sliders },
+    { id: "crt", label: "CRT & Ghosts", icon: Eye },
     { id: "static", label: "Static & Drops", icon: Layers },
     { id: "color", label: "Color splits & Phase", icon: SlidersHorizontal },
-    { id: "crt", label: "CRT & Ghosts", icon: Eye },
     { id: "osd", label: "Overlays & OSD Text", icon: Film },
     { id: "film", label: "Film Artifacts", icon: Film },
+    { id: "wobble", label: "Wobble & Jitter", icon: Sliders },
   ];
 
   return (
-    <div className="w-full flex flex-col bg-zinc-900 border border-zinc-800 rounded-sm overflow-hidden shadow-2xl h-full font-sans">
+    <div className="w-full flex flex-col bg-zinc-900 border border-zinc-800 rounded-sm overflow-hidden shadow-2xl font-sans">
       {/* 1. Header Toolbar */}
       <div className="p-4 bg-zinc-950 border-b border-zinc-800 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
@@ -307,7 +307,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
       </div>
 
       {/* 3. Sliders Panels content */}
-      <div className="flex-1 p-5 overflow-y-auto space-y-5 bg-zinc-900/50 min-h-0 [scrollbar-width:thin] [scrollbar-color:theme(colors.zinc.800)_theme(colors.zinc.950)]">
+      <div className="flex-1 p-5 space-y-5 bg-zinc-900/50">
         <>
         {/* TAB 1: MEDIA & SIGNAL */}
         {activeTab === "signal" && (
@@ -1066,6 +1066,101 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         {/* TAB 4: CHROMATIC SEPARATION & COLOR PHASE */}
         {activeTab === "color" && (
           <div className="space-y-4">
+            {/* Global Display Color Filters & Blur Block */}
+            <div className="p-3 bg-slate-950/60 rounded-md border border-slate-800 space-y-4">
+              <h4 className="text-xs font-mono text-sky-400 uppercase font-bold tracking-wide border-b border-slate-900 pb-1.5">
+                Global Color Postprocessing & Blur Filters
+              </h4>
+              <p className="text-[10px] font-mono text-slate-500 leading-normal">
+                Adjust the overall color values, brightness, contrast, saturations, and soft blur of the entire source signal.
+              </p>
+
+              {/* Blur slider */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[11px] font-mono text-slate-300">
+                  <span>Analog Soft Signal Blur:</span>
+                  <span className="text-sky-400 font-bold">{settings.globalBlur.toFixed(1)}px</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="12"
+                  step="0.2"
+                  value={settings.globalBlur}
+                  onChange={(e) => onChange({ globalBlur: Number(e.target.value) })}
+                  className="w-full accent-sky-500 bg-slate-900 h-1.5 rounded"
+                />
+              </div>
+
+              {/* Brightness slider */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[11px] font-mono text-slate-300">
+                  <span>Signal Brightness:</span>
+                  <span className="text-sky-400 font-bold">{settings.globalBrightness}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="30"
+                  max="180"
+                  step="5"
+                  value={settings.globalBrightness}
+                  onChange={(e) => onChange({ globalBrightness: Number(e.target.value) })}
+                  className="w-full accent-sky-500 bg-slate-900 h-1.5 rounded"
+                />
+              </div>
+
+              {/* Contrast slider */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[11px] font-mono text-slate-300">
+                  <span>Signal Contrast:</span>
+                  <span className="text-sky-400 font-bold">{settings.globalContrast}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="30"
+                  max="180"
+                  step="5"
+                  value={settings.globalContrast}
+                  onChange={(e) => onChange({ globalContrast: Number(e.target.value) })}
+                  className="w-full accent-sky-500 bg-slate-900 h-1.5 rounded"
+                />
+              </div>
+
+              {/* Saturation slider */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[11px] font-mono text-slate-300">
+                  <span>Signal Saturation:</span>
+                  <span className="text-sky-400 font-bold">{settings.globalSaturation}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="200"
+                  step="5"
+                  value={settings.globalSaturation}
+                  onChange={(e) => onChange({ globalSaturation: Number(e.target.value) })}
+                  className="w-full accent-sky-500 bg-slate-900 h-1.5 rounded"
+                />
+              </div>
+
+              {/* Hue Rotate slider */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[11px] font-mono text-slate-300">
+                  <span>Carrier Hue Rotation:</span>
+                  <span className="text-sky-400 font-bold">{settings.globalHueRotate}°</span>
+                </div>
+                <input
+                  type="range"
+                  min="-180"
+                  max="180"
+                  step="5"
+                  value={settings.globalHueRotate}
+                  onChange={(e) => onChange({ globalHueRotate: Number(e.target.value) })}
+                  className="w-full accent-sky-500 bg-slate-900 h-1.5 rounded"
+                />
+              </div>
+            </div>
+
             <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
               <h3 className="text-xs font-mono uppercase text-sky-400 tracking-wider font-bold">
                 Subpixel Chromatic Aberration X/Y Controls
@@ -1295,107 +1390,152 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
               />
             </div>
 
-            {/* Global Display Color Filters & Blur Block */}
-            <div className="p-3 bg-slate-950/60 rounded-md border border-slate-800 space-y-4">
-              <h4 className="text-xs font-mono text-sky-400 uppercase font-bold tracking-wide border-b border-slate-900 pb-1.5">
-                Global Color Postprocessing & Blur Filters
-              </h4>
-              <p className="text-[10px] font-mono text-slate-500 leading-normal">
-                Adjust the overall color values, brightness, contrast, saturations, and soft blur of the entire source signal.
-              </p>
-
-              {/* Blur slider */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-[11px] font-mono text-slate-300">
-                  <span>Analog Soft Signal Blur:</span>
-                  <span className="text-sky-400 font-bold">{settings.globalBlur.toFixed(1)}px</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="12"
-                  step="0.2"
-                  value={settings.globalBlur}
-                  onChange={(e) => onChange({ globalBlur: Number(e.target.value) })}
-                  className="w-full accent-sky-500 bg-slate-900 h-1.5 rounded"
-                />
-              </div>
-
-              {/* Brightness slider */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-[11px] font-mono text-slate-300">
-                  <span>Signal Brightness:</span>
-                  <span className="text-sky-400 font-bold">{settings.globalBrightness}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="30"
-                  max="180"
-                  step="5"
-                  value={settings.globalBrightness}
-                  onChange={(e) => onChange({ globalBrightness: Number(e.target.value) })}
-                  className="w-full accent-sky-500 bg-slate-900 h-1.5 rounded"
-                />
-              </div>
-
-              {/* Contrast slider */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-[11px] font-mono text-slate-300">
-                  <span>Signal Contrast:</span>
-                  <span className="text-sky-400 font-bold">{settings.globalContrast}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="30"
-                  max="180"
-                  step="5"
-                  value={settings.globalContrast}
-                  onChange={(e) => onChange({ globalContrast: Number(e.target.value) })}
-                  className="w-full accent-sky-500 bg-slate-900 h-1.5 rounded"
-                />
-              </div>
-
-              {/* Saturation slider */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-[11px] font-mono text-slate-300">
-                  <span>Signal Saturation:</span>
-                  <span className="text-sky-400 font-bold">{settings.globalSaturation}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="200"
-                  step="5"
-                  value={settings.globalSaturation}
-                  onChange={(e) => onChange({ globalSaturation: Number(e.target.value) })}
-                  className="w-full accent-sky-500 bg-slate-900 h-1.5 rounded"
-                />
-              </div>
-
-              {/* Hue Rotate slider */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-[11px] font-mono text-slate-300">
-                  <span>Carrier Hue Rotation:</span>
-                  <span className="text-sky-400 font-bold">{settings.globalHueRotate}°</span>
-                </div>
-                <input
-                  type="range"
-                  min="-180"
-                  max="180"
-                  step="5"
-                  value={settings.globalHueRotate}
-                  onChange={(e) => onChange({ globalHueRotate: Number(e.target.value) })}
-                  className="w-full accent-sky-500 bg-slate-900 h-1.5 rounded"
-                />
-              </div>
-            </div>
+            
           </div>
         )}
 
         {/* TAB 5: CRT PHOSPHORS & ANTENNA GHOSTS */}
         {activeTab === "crt" && (
           <div className="space-y-4">
-            <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
+            <h3 className="text-xs font-mono uppercase text-sky-400 tracking-wider border-b border-slate-800 pb-1.5 font-bold">
+              CRT Monitor Aesthetics
+            </h3>
+
+            {/* Scanlines parameters */}
+            <div className="flex items-center justify-between p-3 bg-slate-950/40 rounded border border-slate-800">
+              <div className="space-y-0.5">
+                <span className="text-xs font-mono text-slate-300 block font-bold">Draw Simulated CRT Scanlines:</span>
+                <span className="text-[10px] text-slate-500">Enable or completely disable the interlace raster line gaps.</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={settings.scanlinesEnabled !== false}
+                onChange={(e) => onChange({ scanlinesEnabled: e.target.checked })}
+                className="w-5 h-5 accent-sky-500 cursor-pointer h-scanlines-chk"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5 p-3 bg-slate-950/40 rounded border border-slate-800">
+                <div className="flex justify-between text-[11px] font-mono text-slate-300">
+                  <span>Scanline Opacity:</span>
+                  <span className="text-sky-400">{Math.round(settings.scanlineOpacity * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={settings.scanlineOpacity}
+                  onChange={(e) => onChange({ scanlineOpacity: Number(e.target.value) })}
+                  className="w-full accent-sky-500 bg-slate-900 h-1 rounded"
+                />
+              </div>
+
+              <div className="space-y-1.5 p-3 bg-slate-950/40 rounded border border-slate-800">
+                <div className="flex justify-between text-[11px] font-mono text-slate-300">
+                  <span>Scanline Amount:</span>
+                  <span className="text-sky-400">{settings.scanlineAmount} lines</span>
+                </div>
+                <input
+                  type="range"
+                  min="60"
+                  max="680"
+                  step="20"
+                  value={settings.scanlineAmount}
+                  onChange={(e) => onChange({ scanlineAmount: Number(e.target.value) })}
+                  className="w-full accent-sky-500 bg-slate-900 h-1 id-scanlines"
+                />
+              </div>
+
+              <div className="space-y-1.5 p-3 bg-slate-950/40 rounded border border-slate-800 sm:col-span-2">
+                <div className="flex justify-between text-[11px] font-mono text-slate-300">
+                  <span>Scanline Density (Width):</span>
+                  <span className="text-sky-400">{settings.scanlineDensity?.toFixed(1) || "1.0"}x</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.1"
+                  max="2.0"
+                  step="0.1"
+                  value={settings.scanlineDensity ?? 1.0}
+                  onChange={(e) => onChange({ scanlineDensity: Number(e.target.value) })}
+                  className="w-full accent-sky-500 bg-slate-900 h-1"
+                />
+              </div>
+            </div>
+
+            {/* Phosphor Mask Mode (Select Aperture/Shadow dot / Slot blocks) */}
+            <div className="p-3 bg-slate-950/60 rounded border border-slate-800 space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-xs text-slate-300 font-mono font-bold">CRT Subpixel Phosphor Grill:</span>
+                <div className="flex gap-1 p-0.5 bg-slate-900 rounded border border-slate-800">
+                  {["none", "aperture", "slot", "shadow"].map((mask) => (
+                    <button
+                      key={mask}
+                      onClick={() => onChange({ grillMask: mask as any })}
+                      className={`px-2 py-1 text-[11px] font-mono rounded capitalize ${
+                        settings.grillMask === mask ? "bg-slate-800 text-sky-400" : "text-slate-400 hover:text-slate-200"
+                      }`}
+                    >
+                      {mask}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex justify-between text-[11px] font-mono text-slate-300">
+                  <span>Grill Subpixel Scale size:</span>
+                  <span>{settings.grillScale.toFixed(1)}x</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="3.0"
+                  step="0.5"
+                  value={settings.grillScale}
+                  onChange={(e) => onChange({ grillScale: Number(e.target.value) })}
+                  className="w-full accent-sky-400 bg-slate-900 h-1 rounded"
+                />
+              </div>
+
+              <div className="space-y-1 mt-3">
+                <div className="flex justify-between text-[11px] font-mono text-slate-300">
+                  <span>Grill Opacity:</span>
+                  <span>{Math.round(settings.grillOpacity * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={settings.grillOpacity}
+                  onChange={(e) => onChange({ grillOpacity: Number(e.target.value) })}
+                  className="w-full accent-sky-400 bg-slate-900 h-1 rounded"
+                />
+              </div>
+            </div>
+
+            {/* Phosphor Trails */}
+            <div className="space-y-2 p-3 bg-slate-950/60 rounded border border-slate-800">
+              <div className="flex justify-between text-xs font-mono text-slate-300">
+                <span>Phosphor Trails:</span>
+                <span className="text-sky-400 font-bold">{Math.round(settings.phosphorTrails * 100)}% lag</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="0.75"
+                step="0.05"
+                value={settings.phosphorTrails}
+                onChange={(e) => onChange({ phosphorTrails: Number(e.target.value) })}
+                className="w-full accent-sky-500 bg-slate-950 h-5"
+              />
+            </div>
+
+            {/* UHF Antenna Mutipath Reflections (Ghosting) */}
+            <div className="flex justify-between items-center border-b border-slate-800 pb-1.5 pt-4">
               <h3 className="text-xs font-mono uppercase text-sky-400 tracking-wider font-bold">
                 UHF Antenna Mutipath Reflections (Ghosting)
               </h3>
@@ -1484,75 +1624,6 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
               />
             </div>
 
-            <h3 className="text-xs font-mono uppercase text-sky-400 tracking-wider border-b border-slate-800 pt-3 pb-1.5 font-bold">
-              CRT Monitor Aesthetics
-            </h3>
-
-            {/* Phosphor Decay persistent trails */}
-            <div className="space-y-2 p-3 bg-slate-950/60 rounded border border-slate-800">
-              <div className="flex justify-between text-xs font-mono text-slate-300">
-                <span>Radioactive Phosphor Decay Persistence (Trails):</span>
-                <span className="text-sky-400 font-bold">{Math.round(settings.phosphorTrails * 100)}% lag</span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="0.75"
-                step="0.05"
-                value={settings.phosphorTrails}
-                onChange={(e) => onChange({ phosphorTrails: Number(e.target.value) })}
-                className="w-full accent-sky-500 bg-slate-950 h-5"
-              />
-            </div>
-
-            {/* Scanlines parameters */}
-            <div className="flex items-center justify-between p-3 bg-slate-950/40 rounded border border-slate-800">
-              <div className="space-y-0.5">
-                <span className="text-xs font-mono text-slate-300 block font-bold">Draw Simulated CRT Scanlines:</span>
-                <span className="text-[10px] text-slate-500">Enable or completely disable the interlace raster line gaps.</span>
-              </div>
-              <input
-                type="checkbox"
-                checked={settings.scanlinesEnabled !== false}
-                onChange={(e) => onChange({ scanlinesEnabled: e.target.checked })}
-                className="w-5 h-5 accent-sky-500 cursor-pointer h-scanlines-chk"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5 p-3 bg-slate-950/40 rounded border border-slate-800">
-                <div className="flex justify-between text-[11px] font-mono text-slate-300">
-                  <span>Scanlines Opacity:</span>
-                  <span className="text-sky-400">{Math.round(settings.scanlineOpacity * 100)}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.05"
-                  value={settings.scanlineOpacity}
-                  onChange={(e) => onChange({ scanlineOpacity: Number(e.target.value) })}
-                  className="w-full accent-sky-500 bg-slate-900 h-1 rounded"
-                />
-              </div>
-
-              <div className="space-y-1.5 p-3 bg-slate-950/40 rounded border border-slate-800">
-                <div className="flex justify-between text-[11px] font-mono text-slate-300">
-                  <span>Lines Scan Density:</span>
-                  <span className="text-sky-400">{settings.scanlineDensity} lines</span>
-                </div>
-                <input
-                  type="range"
-                  min="120"
-                  max="1024"
-                  step="40"
-                  value={settings.scanlineDensity}
-                  onChange={(e) => onChange({ scanlineDensity: Number(e.target.value) })}
-                  className="w-full accent-sky-500 bg-slate-900 h-1 id-scanlines"
-                />
-              </div>
-            </div>
-
             {/* Phosphor Mask Mode (Select Aperture/Shadow dot / Slot blocks) */}
             <div className="p-3 bg-slate-950/60 rounded border border-slate-800 space-y-4">
               <div className="flex items-center justify-between gap-4">
@@ -1584,6 +1655,22 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                   step="0.5"
                   value={settings.grillScale}
                   onChange={(e) => onChange({ grillScale: Number(e.target.value) })}
+                  className="w-full accent-sky-400 bg-slate-900 h-1 rounded"
+                />
+              </div>
+
+              <div className="space-y-1 mt-3">
+                <div className="flex justify-between text-[11px] font-mono text-slate-300">
+                  <span>Grill Opacity:</span>
+                  <span>{Math.round(settings.grillOpacity * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={settings.grillOpacity}
+                  onChange={(e) => onChange({ grillOpacity: Number(e.target.value) })}
                   className="w-full accent-sky-400 bg-slate-900 h-1 rounded"
                 />
               </div>
@@ -1633,167 +1720,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
               Post-Process Graphic Overlays
             </h3>
 
-            {/* 🛸 PRIMARY IMAGE/GIF OVERLAY LOADER */}
-            <div className="p-4 bg-zinc-950/60 border border-zinc-850 rounded-md space-y-4">
-              <div className="flex items-center justify-between border-b border-zinc-850 pb-1.5">
-                <span className="text-xs font-mono uppercase text-teal-400 font-bold flex items-center gap-1.5">
-                  <span>🛸 Visual Overlay (GIF/PNG)</span>
-                </span>
-                {settings.blendOverlayUrl && (
-                  <button
-                    onClick={() => onChange({ blendOverlayUrl: "", blendOverlayOpacity: 0 })}
-                    className="text-[9px] text-rose-500 hover:text-rose-400 font-bold uppercase transition-colors flex items-center gap-1 cursor-pointer"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                    REMOVE / CLEAR
-                  </button>
-                )}
-              </div>
-              
-              <p className="text-[10px] text-zinc-400 leading-relaxed font-mono">
-                Upload a transparent image/GIF from your device to overlay over the feed, emulating multi-exposure bleeding or custom branding.
-              </p>
-
-              <div className="bg-sky-950/20 border border-sky-900/40 p-2 text-[10px] text-sky-400 font-mono rounded">
-                💡 DRAG TO POSITION: You can click and drag anywhere directly on the video screen preview above to visually position this element!
-              </div>
-              
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={onOverlayUploadClick}
-                  className="flex items-center justify-center gap-2 w-full px-3 py-2 text-xs font-mono bg-zinc-950 border border-zinc-850 text-sky-400 hover:border-sky-800 transition-all rounded-sm cursor-pointer shadow-sm group"
-                >
-                  <Upload className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                  <span>{settings.blendOverlayUrl ? "CHANGE OVERLAY FILE" : "UPLOAD OVERLAY (GIF/PNG)"}</span>
-                </button>
-                {settings.blendOverlayUrl && (
-                  <p className="text-[9px] text-emerald-500/80 font-mono text-center animate-pulse">
-                    ✓ Custom file active in viewport
-                  </p>
-                )}
-              </div>
-
-              {settings.blendOverlayUrl && (
-                <div className="space-y-3.5 pt-2 border-t border-zinc-900/60">
-                  {/* Opacity */}
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-[10px] font-mono text-zinc-400">
-                      <span>Blend Opacity:</span>
-                      <span>{Math.round((settings.blendOverlayOpacity || 0) * 100)}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1.0"
-                      step="0.05"
-                      value={settings.blendOverlayOpacity || 0}
-                      onChange={(e) => onChange({ blendOverlayOpacity: Number(e.target.value) })}
-                      className="w-full accent-teal-400 bg-zinc-900 h-5"
-                    />
-                  </div>
-
-                  {/* Scale */}
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-[10px] font-mono text-zinc-400">
-                      <span>Scale Factor:</span>
-                      <span>{Math.round((settings.blendOverlayScale !== undefined ? settings.blendOverlayScale : 1.0) * 100)}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0.1"
-                      max="4.0"
-                      step="0.05"
-                      value={settings.blendOverlayScale !== undefined ? settings.blendOverlayScale : 1.0}
-                      onChange={(e) => onChange({ blendOverlayScale: Number(e.target.value) })}
-                      className="w-full accent-teal-400 bg-zinc-900 h-5"
-                    />
-                  </div>
-
-                  {/* GIF Playback Controls for Overlay */}
-                  <div className="pt-2 mt-2 border-t border-zinc-900 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          console.log("GIF button clicked");
-                          onChange({ blendOverlayGifPlaying: !settings.blendOverlayGifPlaying });
-                        }}
-                        className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-xs border transition-all font-bold cursor-pointer ${
-                          settings.blendOverlayGifPlaying 
-                            ? "bg-teal-950/40 border-teal-800 text-teal-400" 
-                            : "bg-zinc-900 border-zinc-800 text-zinc-500"
-                        }`}
-                      >
-                        {settings.blendOverlayGifPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-                        <span>{settings.blendOverlayGifPlaying ? "GIF PAUSE" : "GIF RESUME"}</span>
-                      </button>
-                      <button
-                        onClick={onRestartGif}
-                        className="flex items-center justify-center p-2 bg-zinc-900 border border-zinc-800 rounded text-amber-500 hover:text-amber-300 hover:bg-zinc-800"
-                        title="Restart GIF animation"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-[10px] font-mono text-zinc-400">
-                        <span>Overlay GIF Speed:</span>
-                        <span className="text-teal-400">{settings.blendOverlayGifSpeed.toFixed(1)}x</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0.1"
-                        max="5.0"
-                        step="0.1"
-                        value={settings.blendOverlayGifSpeed}
-                        onChange={(e) => onChange({ blendOverlayGifSpeed: Number(e.target.value) })}
-                        className="w-full accent-teal-500 bg-zinc-900 h-4 appearance-none cursor-pointer"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <h3 className="text-xs font-mono uppercase text-sky-450 tracking-wider border-b border-zinc-800 pb-1.5 font-bold">
-              Secondary Overlays & Text Stamps
-            </h3>
-
-            {/* OVERLAY GRAPHICS & MONITOR VIEWFINDERS (Unified!) */}
-            <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-md space-y-4">
-              <span className="text-xs font-mono uppercase text-sky-400 font-bold block border-b border-slate-800 pb-1.5 flex items-center gap-1.5">
-                <span>Active UI Viewfinder / Overlay Type</span>
-              </span>
-
-              {/* Overlay Selector */}
-              <div className="space-y-1.5">
-                <span className="text-xs text-slate-300 font-medium font-mono">Active UI Overlay:</span>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { id: "none", label: "No Overlay" },
-                    { id: "vhs_bezel", label: "CAM Viewfinder Bezel" },
-                    { id: "record_osd", label: "● REC Monitor OSD" }
-                  ].map((ov) => (
-                    <button
-                      key={ov.id}
-                      type="button"
-                      onClick={() => onChange({ overlayType: ov.id as any })}
-                      className={`px-3 py-2 text-xs font-mono rounded border transition-all text-left ${
-                        settings.overlayType === ov.id
-                          ? "bg-sky-950 border-sky-500 text-sky-300 shadow-md font-semibold"
-                          : "bg-slate-950 border-slate-800 hover:border-slate-700 text-slate-300"
-                      }`}
-                    >
-                      {ov.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-
-            </div>
-
-            {/* OSD Enable */}
+            {/* 1. ENABLE VCR INFO ON SCREEN (Top-level toggle) */}
             <div className="flex items-center justify-between p-3.5 bg-slate-950/60 border border-slate-800 rounded-md">
               <div className="space-y-0.5">
                 <span className="text-xs font-mono text-slate-300 block font-bold">Enable VCR Info On-Screen:</span>
@@ -1801,28 +1728,18 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
               </div>
               <input
                 type="checkbox"
-                checked={settings.osdEnabled}
+                checked={!!settings.osdEnabled}
                 onChange={(e) => onChange({ osdEnabled: e.target.checked })}
                 className="w-5 h-5 accent-sky-500 cursor-pointer"
               />
             </div>
 
-            {/* Debug Telemetry Toggle */}
-            <div className="flex items-center justify-between p-3.5 bg-slate-950/60 border border-slate-800 rounded-md">
-              <div className="space-y-0.5">
-                <span className="text-xs font-mono text-amber-500 block font-bold">Enable Debug Telemetry HUD:</span>
-                <span className="text-[10px] text-slate-500">Renders high-precision real-time wave calibration grids, frame rate counters, and slider record sequences.</span>
-              </div>
-              <input
-                type="checkbox"
-                checked={!!settings.debugModeEnabled}
-                onChange={(e) => onChange({ debugModeEnabled: e.target.checked })}
-                className="w-5 h-5 accent-amber-500 cursor-pointer"
-              />
-            </div>
-
+            {/* 2. VCR TEXT INFO (Visible when VCR Info is enabled) */}
             {settings.osdEnabled && (
               <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-md space-y-4">
+                <span className="text-xs font-mono uppercase text-sky-450 font-bold block border-b border-slate-800 pb-1.5">
+                  VCR Text Info & Date Stamp
+                </span>
                 
                 {/* Custom Label */}
                 <div className="space-y-1">
@@ -1852,14 +1769,14 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 
                 {/* Custom Date Overriding text */}
                 <div className="space-y-1">
-                  <span className="text-xs font-mono text-slate-300 block">Override Date Stamp (Free text VLC style):</span>
+                  <span className="text-xs font-mono text-slate-300 block">Override Date Stamp:</span>
                   <input
                     type="text"
                     maxLength={28}
                     value={settings.osdCustomDate || ""}
                     onChange={(e) => onChange({ osdCustomDate: e.target.value })}
                     className="w-full text-xs font-mono bg-slate-900 border border-slate-800 text-slate-200 px-3 py-2 rounded focus:outline-none focus:ring-1 focus:ring-sky-500 uppercase"
-                    placeholder="e.g. JUN. 02 1996, OCT. 31 1988, SYSTEM LIVE"
+                    placeholder="e.g. JUN. 02 1996, OCT. 31 1988"
                   />
                 </div>
 
@@ -1929,7 +1846,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                 
                 {/* OSD Decoupled Distortions */}
                 <div className="pt-3 border-t border-slate-900/80 space-y-3">
-                  <span className="text-[10px] font-mono text-sky-400 uppercase tracking-tighter font-bold block">Exclusive OSD Signal Overrides (Decoupled from Global Blur/Scale)</span>
+                  <span className="text-[10px] font-mono text-sky-400 uppercase tracking-tighter font-bold block">Exclusive OSD Signal Overrides</span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5 p-3 bg-slate-900/60 rounded border border-slate-800">
                       <div className="flex justify-between text-[11px] font-mono text-slate-400">
@@ -1976,9 +1893,9 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                         className={`px-1.5 py-1 text-[10px] font-mono rounded text-center transition-all ${
                           settings.osdDateMode === "1996" ? "bg-slate-800 text-teal-400 font-bold shadow" : "text-slate-400 hover:text-slate-200"
                         }`}
-                        title="Randomized Date (1975–2001) like vintage camera tapes"
+                        title="Randomized Date (1975–2001)"
                       >
-                        1996 model (Random)
+                        1996 Model
                       </button>
                       <button
                         type="button"
@@ -1988,7 +1905,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                         }`}
                         title="Choose another random date 1975-2001"
                       >
-                        Random 1975-2001
+                        Random
                       </button>
                       <button
                         type="button"
@@ -1996,18 +1913,18 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                         className={`px-1.5 py-1 text-[10px] font-mono rounded text-center transition-all ${
                           settings.osdDateMode === "current" ? "bg-slate-800 text-teal-400 font-bold shadow" : "text-slate-400 hover:text-slate-200"
                         }`}
-                        title="Lock to active live browser clock and year"
+                        title="Lock to active live browser clock"
                       >
-                        Live Current Year
+                        Live Clock
                       </button>
                     </div>
                   </div>
 
-                  {/* Active Randomized Date details display + reroll button */}
+                  {/* Active Randomized Date details */}
                   {(settings.osdDateMode === "1996" || settings.osdDateMode === "random") && (
                     <div className="flex items-center justify-between p-2 bg-slate-950/60 border border-slate-900/80 rounded font-mono text-[11px]">
                       <div className="flex flex-col">
-                        <span className="text-[9px] text-slate-500 uppercase">Active Camcorder Date Stamp:</span>
+                        <span className="text-[9px] text-slate-500 uppercase">Active Date Stamp:</span>
                         <span className="text-teal-400 font-bold uppercase tracking-wide">
                           {settings.osdRandomMonth || "OCT"}. {settings.osdRandomDay || 31} {settings.osdRandomYear || 1996}
                         </span>
@@ -2028,22 +1945,21 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                         }}
                         className="px-2 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-850 hover:border-slate-700 text-slate-300 font-bold rounded text-[10px] uppercase cursor-pointer transition-all flex items-center gap-1"
                       >
-                        <RefreshCw className="w-3 h-3 text-slate-400 animate-spin-once" />
-                        <span>Reroll Date</span>
+                        <RefreshCw className="w-3 h-3 text-slate-400" />
+                        <span>Reroll</span>
                       </button>
                     </div>
                   )}
 
-                  {/* Time tracking mode block */}
+                  {/* Time tracking mode */}
                   <div className="flex flex-col gap-1.5 pt-1">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs font-mono text-slate-300">Camcorder Time Tracking Display:</span>
-                      <span className="text-[10px] text-slate-500 font-mono">American Camcorder Standard</span>
+                      <span className="text-xs font-mono text-slate-300">Time Tracking Display:</span>
                     </div>
                     <div className="grid grid-cols-3 gap-1.5 bg-slate-900 p-0.5 rounded border border-slate-800">
                       {[
-                        { id: "clock", label: "Real Time Clock" },
-                        { id: "counter", label: "VHS Tape Counter" },
+                        { id: "clock", label: "Real Time" },
+                        { id: "counter", label: "VHS Tape" },
                         { id: "none", label: "Hidden" }
                       ].map((tStyle) => (
                         <button
@@ -2065,7 +1981,77 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
               </div>
             )}
 
+            {/* 3. ACTIVE UI VIEWFINDER / OVERLAY TYPE */}
+            <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-md space-y-4">
+              <span className="text-xs font-mono uppercase text-sky-450 font-bold block border-b border-slate-800 pb-1.5 flex items-center gap-1.5">
+                <span>Active UI Viewfinder / Overlay Type</span>
+              </span>
+              <div className="space-y-1.5">
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: "none", label: "No Overlay" },
+                    { id: "vhs_bezel", label: "CAM Viewfinder Bezel" },
+                    { id: "record_osd", label: "● REC Monitor OSD" }
+                  ].map((ov) => (
+                    <button
+                      key={ov.id}
+                      type="button"
+                      onClick={() => onChange({ overlayType: ov.id as any })}
+                      className={`px-3 py-2 text-xs font-mono rounded border transition-all text-left ${
+                        settings.overlayType === ov.id
+                          ? "bg-sky-950 border-sky-500 text-sky-300 shadow-md font-semibold"
+                          : "bg-slate-950 border-slate-800 hover:border-slate-700 text-slate-300"
+                      }`}
+                    >
+                      {ov.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
 
+            {/* 4. VISUAL OVERLAY (GIF/PNG) */}
+            <div className="p-4 bg-zinc-950/60 border border-zinc-850 rounded-md space-y-4">
+              <div className="flex items-center justify-between border-b border-zinc-850 pb-1.5">
+                <span className="text-xs font-mono uppercase text-teal-400 font-bold flex items-center gap-1.5">
+                  <span>🛸 Visual Overlay (GIF/PNG)</span>
+                </span>
+                {settings.blendOverlayUrl && (
+                  <button
+                    onClick={() => onChange({ blendOverlayUrl: "", blendOverlayOpacity: 0 })}
+                    className="text-[9px] text-rose-500 hover:text-rose-400 font-bold uppercase transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    REMOVE / CLEAR
+                  </button>
+                )}
+              </div>
+              
+              <p className="text-[10px] text-zinc-400 leading-relaxed font-mono">
+                Upload a transparent image/GIF from your device to overlay over the feed.
+              </p>
+
+              <button
+                type="button"
+                onClick={onOverlayUploadClick}
+                className="flex items-center justify-center gap-2 w-full px-3 py-2 text-xs font-mono bg-zinc-950 border border-zinc-850 text-sky-400 hover:border-sky-800 transition-all rounded-sm cursor-pointer shadow-sm"
+              >
+                <span>{settings.blendOverlayUrl ? "CHANGE OVERLAY FILE" : "UPLOAD OVERLAY (GIF/PNG)"}</span>
+              </button>
+            </div>
+
+            {/* 5. ENABLE DEBUG TELEMETRY HUD (Bottom-level toggle) */}
+            <div className="flex items-center justify-between p-3.5 bg-slate-950/60 border border-slate-800 rounded-md">
+              <div className="space-y-0.5">
+                <span className="text-xs font-mono text-amber-500 block font-bold">Enable Debug Telemetry HUD:</span>
+                <span className="text-[10px] text-slate-500">Real-time calibration grids, frame rate counters, slider sequences.</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={!!settings.debugModeEnabled}
+                onChange={(e) => onChange({ debugModeEnabled: e.target.checked })}
+                className="w-5 h-5 accent-amber-500 cursor-pointer"
+              />
+            </div>
           </div>
         )}
         {activeTab === "film" && (

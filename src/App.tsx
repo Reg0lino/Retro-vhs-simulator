@@ -1292,39 +1292,43 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans select-none overflow-hidden">
+    <div className={`min-h-screen lg:h-screen lg:overflow-hidden bg-zinc-950 text-zinc-100 flex flex-col font-sans select-none ${isFullscreen ? "overflow-hidden w-full h-full" : ""}`}>
       
       {/* 1. Header Branded Bar */}
-      <header className="p-4 bg-zinc-950 border-b border-zinc-900 flex justify-between items-center shrink-0 z-10 px-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-zinc-900 border border-zinc-800 rounded-sm">
-            <Tv className="w-5 h-5 text-sky-400" />
+      <header className="sticky top-0 p-2 bg-zinc-950/90 backdrop-blur-md border-b border-zinc-900 flex justify-between items-center shrink-0 z-[100] px-4">
+        <div className="flex items-center gap-2.5">
+          <div className="p-1 px-1.5 bg-zinc-900 border border-zinc-800 rounded-sm">
+            <Tv className="w-4 h-4 text-sky-400" />
           </div>
-          <div>
-            <h1 className="text-sm font-mono font-bold tracking-wider text-zinc-100 uppercase">
+          <div className="flex flex-col justify-center pt-0.5">
+            <h1 className="text-xs font-mono font-bold tracking-wider text-zinc-100 uppercase leading-none mb-0.5">
               Retro Video Engine
             </h1>
-            <p className="text-[10px] text-zinc-500 font-mono">
+            <p className="text-[9px] text-zinc-500 font-mono leading-none">
               PRO ANALOG SIGNAL DISTORTION PROCESSOR
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
-          <span className="text-[10px] text-emerald-400 font-mono tracking-widest hidden sm:inline animate-pulse">
+          <span className="text-[9px] text-emerald-400 font-mono tracking-widest hidden sm:inline animate-pulse mt-0.5">
             ● ANALOG SYNAPSE MATRIX READY
           </span>
         </div>
       </header>
 
       {/* 2. Main Workspace */}
-      <main className="flex-1 flex flex-col lg:flex-row items-start min-h-0 relative">
+      <main className="flex-1 flex flex-col lg:flex-row items-stretch lg:overflow-hidden relative min-h-0">
         
         {/* VIEWPORT CANVAS COLUMN */}
         <div 
           onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
           onDrop={handleDrop}
-          className={`flex-1 flex flex-col items-center justify-center p-6 ${isFullscreen ? "bg-zinc-950 p-6 z-50 fixed inset-0 w-full h-full overflow-y-auto" : "bg-zinc-950 border-r border-zinc-900"}`}
+          className={`flex-1 flex flex-col items-center justify-start p-6 min-h-0 ${
+            isFullscreen 
+              ? "bg-zinc-950 p-6 z-50 fixed inset-0 w-full h-full overflow-y-auto" 
+              : "bg-zinc-950 border-r border-zinc-900 lg:h-full lg:overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          }`}
         >
           
           <div className={`relative flex flex-col items-center transition-all duration-200 ${isFullscreen ? "w-full min-h-full justify-start pb-20" : "w-full max-w-[1800px]"}`}>
@@ -1389,7 +1393,7 @@ export default function App() {
             >
               {/* Clean Centered CRT Monitor Viewfinder Screen Piece */}
               <div 
-                className={`relative overflow-hidden rounded-t-sm bg-black shadow-[0_0_100px_rgba(0,0,0,0.9)] border-4 border-zinc-900 flex items-center justify-center transition-all duration-300 w-full ring-1 ring-zinc-800`}
+                className={`relative overflow-hidden rounded bg-black shadow-[0_0_100px_rgba(0,0,0,0.9)] border-4 border-zinc-900 flex items-center justify-center transition-all duration-300 w-full ring-1 ring-zinc-800`}
                 style={{
                   height: settings.flexToScreen ? "auto" : `${settings.canvasHeight}px`,
                   maxHeight: isFullscreen ? "88vh" : "78vh",
@@ -1398,20 +1402,20 @@ export default function App() {
               >
                 {/* Tactical Viewport Controls (Overlayed on Bezel) */}
                 <div className="absolute top-3 right-3 z-50 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  {/* Scaling Toggle */}
-                  <button
-                    onClick={() => handleSettingsChange({ flexToScreen: !settings.flexToScreen })}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm border backdrop-blur-xl transition-all font-mono text-[9px] uppercase tracking-wider font-bold shadow-2xl ${
-                      settings.flexToScreen 
-                        ? "bg-sky-500/30 border-sky-400/50 text-white" 
-                        : "bg-zinc-900/80 border-zinc-700 text-zinc-400 hover:bg-zinc-900"
-                    }`}
-                    title={settings.flexToScreen ? "Switch to 1:1 Pixel Mapping" : "Scale to Fit Bezel"}
-                  >
-                    <Maximize2 className="w-3 h-3" />
-                    <span>{settings.flexToScreen ? "ZOOM: FIT" : "PIXEL: 1:1"}</span>
-                  </button>
-                </div>
+                    {/* Scaling Toggle */}
+                    <button
+                      onClick={() => handleSettingsChange({ flexToScreen: !settings.flexToScreen })}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm border backdrop-blur-xl transition-all font-mono text-[9px] uppercase tracking-wider font-bold shadow-2xl ${
+                        settings.flexToScreen 
+                          ? "bg-sky-500/30 border-sky-400/50 text-white" 
+                          : "bg-zinc-900/80 border-zinc-700 text-zinc-400 hover:bg-zinc-900"
+                      }`}
+                      title={settings.flexToScreen ? "Switch to 1:1 Pixel Mapping" : "Scale to Fit Bezel"}
+                    >
+                      <Maximize2 className="w-3 h-3" />
+                      <span>{settings.flexToScreen ? "ZOOM: FIT" : "PIXEL: 1:1"}</span>
+                    </button>
+                  </div>
 
               {/* Inner animated power collapse / expand screen container */}
               <div 
@@ -1516,50 +1520,36 @@ export default function App() {
               </div>
             </div>
 
+
             {/* PHYSICAL CRT BEZEL CONTROL RAIL (Directly under the screen!) */}
               <div 
-                className="w-full bg-gradient-to-b from-zinc-900 to-zinc-950 border-x border-b border-zinc-800 rounded-b-md p-2 shadow-xl font-mono text-xs flex flex-row items-center justify-between gap-4 transition-all"
+                className="w-full bg-gradient-to-b from-zinc-900 to-zinc-950 border-x border-b border-zinc-800 rounded-b-md p-2 shadow-xl font-mono text-xs flex flex-col items-center gap-2 transition-all"
               >
-                {/* Retro Logo & Power Indicator */}
-                <div className="flex items-center gap-3 select-none">
-                  {/* Simulated Power LED indicator */}
-                  <div className="flex flex-col items-center gap-0.5 justify-center">
-                    <span className="text-[7.5px] text-zinc-500 font-bold uppercase tracking-widest leading-none">Power</span>
-                    <div className={`w-3 h-3 rounded-full border border-zinc-950 shadow transition-all duration-300 ${
-                      tvPowerState === "on" 
-                        ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]" 
-                        : tvPowerState === "turning_on" || tvPowerState === "turning_off"
-                          ? "bg-amber-500 animate-pulse shadow-[0_0_5px_rgba(245,158,11,0.6)]"
-                          : "bg-red-700 shadow-[0_0_2px_rgba(185,28,28,0.4)]"
-                    }`} />
+                <div className="w-full flex flex-wrap items-center justify-center gap-2">
+                  {/* Retro Logo & Power Indicator */}
+                  <div className="flex items-center gap-3 select-none">
+                    {/* Simulated Power LED indicator */}
+                    <div className="flex flex-col items-center gap-0.5 justify-center">
+                      <span className="text-[7.5px] text-zinc-500 font-bold uppercase tracking-widest leading-none">POWER</span>
+                      <div className={`w-3 h-3 rounded-full border border-zinc-950 shadow transition-all duration-300 ${
+                        tvPowerState === "on" 
+                          ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]" 
+                          : tvPowerState === "turning_on" || tvPowerState === "turning_off"
+                            ? "bg-amber-500 animate-pulse shadow-[0_0_5px_rgba(245,158,11,0.6)]"
+                            : "bg-red-700 shadow-[0_0_2px_rgba(185,28,28,0.4)]"
+                      }`} />
+                    </div>
                   </div>
-                  
-                  {/* Brand name */}
-                  <div className="flex flex-col">
-                  </div>
-
 
                   {/* Manual VHS Glitch tactile key */}
                   <button
                     type="button"
-                    onMouseDown={() => {
-                      setIsManualGlitchActive(true);
-                    }}
-                    onMouseUp={() => {
-                      setIsManualGlitchActive(false);
-                    }}
-                    onMouseLeave={() => {
-                      setIsManualGlitchActive(false);
-                    }}
-                    onTouchStart={(e) => {
-                      e.preventDefault();
-                      setIsManualGlitchActive(true);
-                    }}
-                    onTouchEnd={(e) => {
-                      e.preventDefault();
-                      setIsManualGlitchActive(false);
-                    }}
-                    className={`ml-2 px-2 py-0.5 rounded-sm font-extrabold border transition-all text-[8px] tracking-wider uppercase cursor-pointer relative select-none flex items-center gap-1 h-[18px] top-0 active:top-0.5 ${
+                    onMouseDown={() => setIsManualGlitchActive(true)}
+                    onMouseUp={() => setIsManualGlitchActive(false)}
+                    onMouseLeave={() => setIsManualGlitchActive(false)}
+                    onTouchStart={(e) => { e.preventDefault(); setIsManualGlitchActive(true); }}
+                    onTouchEnd={(e) => { e.preventDefault(); setIsManualGlitchActive(false); }}
+                    className={`px-2 py-0.5 rounded-sm font-extrabold border transition-all text-[8px] tracking-wider uppercase cursor-pointer select-none flex items-center gap-1 ${
                       isManualGlitchActive
                         ? "bg-amber-500 border-amber-300 text-black shadow-[0_0_10px_rgba(245,158,11,0.8)] animate-pulse"
                         : "bg-zinc-800 hover:bg-zinc-705 border-zinc-700 hover:border-zinc-500 text-amber-500 shadow-sm"
@@ -1571,24 +1561,12 @@ export default function App() {
 
                   <button
                     type="button"
-                    onMouseDown={() => {
-                      setFilmFxActive(true);
-                    }}
-                    onMouseUp={() => {
-                      setFilmFxActive(false);
-                    }}
-                    onMouseLeave={() => {
-                      setFilmFxActive(false);
-                    }}
-                    onTouchStart={(e) => {
-                      e.preventDefault();
-                      setFilmFxActive(true);
-                    }}
-                    onTouchEnd={(e) => {
-                      e.preventDefault();
-                      setFilmFxActive(false);
-                    }}
-                    className={`ml-2 px-2 py-0.5 rounded-sm font-extrabold border transition-all text-[8px] tracking-wider uppercase cursor-pointer relative select-none flex items-center gap-1 h-[18px] top-0 active:top-0.5 ${
+                    onMouseDown={() => setFilmFxActive(true)}
+                    onMouseUp={() => setFilmFxActive(false)}
+                    onMouseLeave={() => setFilmFxActive(false)}
+                    onTouchStart={(e) => { e.preventDefault(); setFilmFxActive(true); }}
+                    onTouchEnd={(e) => { e.preventDefault(); setFilmFxActive(false); }}
+                    className={`px-2 py-0.5 rounded-sm font-extrabold border transition-all text-[8px] tracking-wider uppercase cursor-pointer select-none flex items-center gap-1 ${
                       filmFxActive 
                         ? "bg-rose-500 border-rose-300 text-white shadow-[0_0_10px_rgba(244,63,94,0.8)] animate-pulse"
                         : "bg-zinc-800 hover:bg-zinc-705 border-zinc-700 hover:border-zinc-500 text-rose-500 shadow-sm"
@@ -1600,10 +1578,8 @@ export default function App() {
 
                   <button
                     type="button"
-                    onClick={() => {
-                      setFilmCountdownActive((prev) => !prev);
-                    }}
-                    className={`ml-2 px-2 py-0.5 rounded-sm font-extrabold border transition-all text-[8px] tracking-wider uppercase cursor-pointer relative select-none flex items-center gap-1 h-[18px] top-0 active:top-0.5 ${
+                    onClick={() => setFilmCountdownActive((prev) => !prev)}
+                    className={`px-2 py-0.5 rounded-sm font-extrabold border transition-all text-[8px] tracking-wider uppercase cursor-pointer select-none flex items-center gap-1 ${
                       filmCountdownActive 
                         ? "bg-cyan-500 border-cyan-300 text-black shadow-[0_0_10px_rgba(6,182,212,0.8)] animate-pulse"
                         : "bg-zinc-800 hover:bg-zinc-705 border-zinc-700 hover:border-zinc-500 text-cyan-400 shadow-sm"
@@ -1612,123 +1588,157 @@ export default function App() {
                   >
                     <span>🎬 COUNTDOWN</span>
                   </button>
-                </div>
 
-                {/* Physical Power ON & Power OFF mechanical button keys */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[8.5px] text-zinc-500 uppercase font-semibold mr-1 hidden xs:block">CRT TUBE:</span>
-                  
-                  {/* TV ON button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (tvPowerState === "off") {
-                        setTvPowerState("turning_on");
-                        setTimeout(() => {
-                          setTvPowerState("on");
-                        }, 550);
-                      }
-                    }}
-                    disabled={tvPowerState === "on" || tvPowerState === "turning_on" || tvPowerState === "turning_off"}
-                    className={`px-2 py-0.5 rounded-sm font-black border transition-all text-[9px] uppercase cursor-pointer flex items-center gap-1.5 relative top-0 active:top-0.5 ${
-                      tvPowerState === "on"
-                        ? "bg-zinc-950/40 border-zinc-900 text-zinc-650 cursor-default"
-                        : "bg-zinc-800 hover:bg-zinc-750 border-zinc-700 hover:border-zinc-500 text-zinc-250 active:bg-zinc-900 shadow-md"
-                    }`}
-                    title="Power on the analog CRT color phosphor grids"
-                  >
-                    <span>ON</span>
-                  </button>
-
-                  {/* TV OFF button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (tvPowerState === "on") {
-                        setTvPowerState("turning_off");
-                        setTimeout(() => {
-                          setTvPowerState("off");
-                        }, 500);
-                      }
-                    }}
-                    disabled={tvPowerState === "off" || tvPowerState === "turning_on" || tvPowerState === "turning_off"}
-                    className={`px-2 py-0.5 rounded-sm font-black border transition-all text-[9px] uppercase cursor-pointer flex items-center gap-1.5 relative top-0 active:top-0.5 ${
-                      tvPowerState === "off"
-                        ? "bg-zinc-950/40 border-zinc-900 text-zinc-650 cursor-default"
-                        : "bg-red-950/40 hover:bg-red-900/50 border-red-900/60 hover:border-red-650 text-red-400 active:bg-zinc-950 shadow-md"
-                    }`}
-                    title="Collapse high-voltage grids and magnetic deflection lines"
-                  >
-                    <span>OFF</span>
-                  </button>
-                </div>
-              </div>
-                            {/* ■ CAPTURE & EXPORT CONTROL BAY */}
-            <div className="w-full bg-zinc-900 border border-zinc-800 rounded-sm p-1.5 mt-2 shadow-md font-mono text-xs flex flex-wrap items-center justify-between gap-3 transition-all">
-              <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
-                <span className="text-[9px] text-zinc-500 font-bold tracking-wider mr-1 uppercase">● RECORDER:</span>
-                
-                {isRecording ? (
-                  <div className="flex items-center gap-2">
+                  {/* Camera Controls */}
+                  <div className="flex items-center gap-1.5 shrink-0 font-mono pl-3 border-l border-zinc-800">
+                    <span className="text-[8.5px] text-zinc-500 uppercase font-semibold mr-0.5">CAMERA:</span>
                     <button
-                      onClick={stopRecordingVideo}
-                      className="flex items-center gap-1.5 bg-rose-955 bg-rose-950 hover:bg-rose-900 border border-rose-800 px-3 py-1 text-[9px] font-bold text-rose-300 rounded-sm transition-all cursor-pointer shadow-md"
+                      onClick={handleToggleCamera}
+                      className={`flex items-center gap-1 px-1.5 py-0.5 text-[8px] font-bold rounded-sm transition-all border cursor-pointer ${
+                        isCameraActive && settings.sourceType === "camera"
+                          ? "bg-rose-950 text-rose-400 border-rose-900"
+                          : "bg-emerald-700 text-zinc-950 hover:bg-emerald-600 font-extrabold"
+                      }`}
+                      title="Toggle System Camera"
                     >
-                      <Square className="w-2.5 h-2.5 fill-current animate-pulse text-rose-500" />
-                      <span>STOP EXPORT ({parseSeconds(recDuration)})</span>
+                      <Camera className="w-2.5 h-2.5" />
+                      <span>{isCameraActive && settings.sourceType === "camera" ? "OFF" : "ON"}</span>
                     </button>
-                    <span className="text-[8px] text-zinc-500 uppercase tracking-widest font-extrabold animate-pulse">
-                      🔴 EXPORTING {exportConfig.format.toUpperCase()} ({exportConfig.preset === "original" ? "ACTIVE" : exportConfig.preset.toUpperCase()})
-                    </span>
+
+                    <button
+                      onClick={() => handleCycleCamera()}
+                      disabled={!isCameraActive}
+                      className={`flex items-center gap-1 px-1.5 py-0.5 text-[8px] font-bold rounded-sm transition-all border ${
+                        isCameraActive
+                          ? "bg-zinc-800 border-zinc-700 hover:bg-zinc-755 text-sky-400 hover:text-sky-300 cursor-pointer"
+                          : "bg-zinc-950/45 border-zinc-900 text-zinc-650 cursor-not-allowed"
+                      }`}
+                      title="Cycle Camera Lenses (if multiple)"
+                    >
+                      <RefreshCw className="w-2.5 h-2.5" />
+                      <span>LENS</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleSettingsChange({ flipHorizontal: !settings.flipHorizontal })}
+                      className={`px-1.5 py-0.5 text-[8px] font-mono rounded-sm border transition-all cursor-pointer ${
+                        settings.flipHorizontal
+                          ? "bg-sky-955 bg-sky-950 border-sky-600 text-sky-300 font-bold"
+                          : "bg-zinc-950 border-zinc-800 hover:border-zinc-700 text-zinc-400"
+                      }`}
+                      title="Flip Horizontally"
+                    >
+                      FLIP X
+                    </button>
+
+                    <button
+                      onClick={() => handleSettingsChange({ flipVertical: !settings.flipVertical })}
+                      className={`px-1.5 py-0.5 text-[8px] font-mono rounded-sm border transition-all cursor-pointer ${
+                        settings.flipVertical
+                          ? "bg-sky-955 bg-sky-950 border-sky-600 text-sky-300 font-bold"
+                          : "bg-zinc-950 border-zinc-800 hover:border-zinc-700 text-zinc-400"
+                      }`}
+                      title="Flip Vertically"
+                    >
+                      FLIP Y
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={() => setIsFullscreen(!isFullscreen)}
+                      className={`px-1.5 py-0.5 text-[8px] font-mono rounded-sm border transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                        isFullscreen
+                          ? "bg-sky-955 bg-sky-950 border-sky-600 text-sky-300 font-bold"
+                          : "bg-zinc-950 border-zinc-800 hover:border-zinc-700 text-zinc-400"
+                      }`}
+                      title="Toggle immersive display screen focus"
+                    >
+                      {isFullscreen ? <Minimize2 className="w-2.5 h-2.5" /> : <Maximize2 className="w-2.5 h-2.5" />}
+                      FULLSCREEN
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (tvPowerState === "off") {
+                          setTvPowerState("turning_on");
+                          setTimeout(() => setTvPowerState("on"), 550);
+                        }
+                      }}
+                      disabled={tvPowerState === "on" || tvPowerState === "turning_on" || tvPowerState === "turning_off"}
+                      className={`px-2 py-0.5 rounded-sm font-black border transition-all text-[9px] uppercase cursor-pointer ${
+                        tvPowerState === "on"
+                          ? "bg-zinc-950/40 border-zinc-900 text-zinc-650 cursor-default"
+                          : "bg-zinc-800 hover:bg-zinc-750 border-zinc-700 hover:border-zinc-500 text-zinc-250 active:bg-zinc-900 shadow-md"
+                      }`}
+                      title="Power on the analog CRT color phosphor grids"
+                    >
+                      ON
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (tvPowerState === "on") {
+                          setTvPowerState("turning_off");
+                          setTimeout(() => setTvPowerState("off"), 500);
+                        }
+                      }}
+                      disabled={tvPowerState === "off" || tvPowerState === "turning_on" || tvPowerState === "turning_off"}
+                      className={`px-2 py-0.5 rounded-sm font-black border transition-all text-[9px] uppercase cursor-pointer ${
+                        tvPowerState === "off"
+                          ? "bg-zinc-950/40 border-zinc-900 text-zinc-650 cursor-default"
+                          : "bg-red-950/40 hover:bg-red-900/50 border-red-900/60 hover:border-red-650 text-red-400 active:bg-zinc-950 shadow-md"
+                      }`}
+                      title="Collapse high-voltage grids and magnetic deflection lines"
+                    >
+                      OFF
+                    </button>
                   </div>
-                ) : (
-                  <button
-                    onClick={() => setShowExportModal(true)}
-                    className="flex items-center gap-1.5 bg-gradient-to-r from-sky-950 to-indigo-950 hover:from-sky-900 hover:to-indigo-900 px-3 py-1 text-[9px] text-sky-350 rounded-sm border border-sky-800 transition-all cursor-pointer font-bold shadow-sm hover:text-sky-200"
+                </div>
+              </div>
+
+              {/* Camera Access Error Alert */}
+              {cameraError && (
+                <div className="w-full mt-2 bg-rose-955 bg-rose-950/40 border border-rose-800 p-2 rounded-sm flex items-start gap-3 text-rose-200 animate-in fade-in duration-300 text-left">
+                  <ShieldAlert className="w-3 h-3 text-rose-500 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-[10px] font-bold uppercase tracking-tight font-mono">Lens Access Error</p>
+                    <p className="text-[9px] opacity-80 font-mono">{cameraError}</p>
+                  </div>
+                  <button 
+                    onClick={() => setCameraError(null)}
+                    className="text-rose-400 hover:text-white cursor-pointer"
                   >
-                    <Video className="w-2.5 h-2.5 text-sky-450" />
-                    <span>🎬 EXPORT VIDEO / GIF...</span>
+                    <Square className="w-3 h-3" />
                   </button>
-                )}
+                </div>
+              )}
+              
+              {/* TRINITRON ANALOG MEDIA DECK */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-2">
+                <div className="flex-1 w-full relative">
+                  <VcrController
+                    isFullscreen={isFullscreen}
+                    settings={settings}
+                    handleSettingsChange={handleSettingsChange}
+                    vidPlayState={vidPlayState}
+                    vidCurrentTime={vidCurrentTime}
+                    vidDuration={vidDuration}
+                    handleTogglePlay={handleTogglePlay}
+                    handleStopVideo={handleStopVideo}
+                    handleSeekVideo={handleSeekVideo}
+                    panicConfirm={panicConfirm}
+                    setPanicConfirm={setPanicConfirm}
+                    handleStabilizeImage={handleStabilizeImage}
+                    isRecording={isRecording}
+                    recDuration={recDuration}
+                    exportConfig={exportConfig}
+                    stopRecordingVideo={stopRecordingVideo}
+                    setShowExportModal={setShowExportModal}
+                  />
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="text-[9px] text-zinc-500">
-                  FRM: <span className="text-zinc-350">{renderedFrames}</span>
-                </span>
-
-                <button
-                  type="button"
-                  onClick={() => setIsFullscreen(!isFullscreen)}
-                  className="p-1 bg-zinc-90 w bg-zinc-900 border border-zinc-800 rounded-sm text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 flex items-center justify-center cursor-pointer transition-all"
-                  title="Toggle immersive display screen focus"
-                >
-                  {isFullscreen ? <Minimize2 className="w-3 h-3 text-sky-450" /> : <Maximize2 className="w-3 h-3" />}
-                </button>
-              </div>
-            </div>
-
-            {/* TRINITRON ANALOG MEDIA DECK & CAMERA PANEL */}
-            <VcrController
-              isFullscreen={isFullscreen}
-              settings={settings}
-              handleSettingsChange={handleSettingsChange}
-              vidPlayState={vidPlayState}
-              vidCurrentTime={vidCurrentTime}
-              vidDuration={vidDuration}
-              vidVolume={vidVolume}
-              handleTogglePlay={handleTogglePlay}
-              handleStopVideo={handleStopVideo}
-              handleSeekVideo={handleSeekVideo}
-              handleVolumeChange={handleVolumeChange}
-              panicConfirm={panicConfirm}
-              setPanicConfirm={setPanicConfirm}
-              handleStabilizeImage={handleStabilizeImage}
-              cameraError={cameraError}
-              setCameraError={setCameraError}
-              isCameraActive={isCameraActive}
-              handleToggleCamera={handleToggleCamera}
-              handleCycleCamera={handleCycleCamera}
-            />
 
 
 
@@ -1769,7 +1779,7 @@ export default function App() {
       </div>
 
         {/* CONTROLS SLIDERS COLUMN */}
-        <div className="w-full lg:w-[480px] xl:w-[540px] shrink-0 p-5 bg-zinc-950 border-t lg:border-t-0 flex flex-col h-full min-h-0 [scrollbar-width:thin] [scrollbar-color:theme(colors.zinc.800)_theme(colors.zinc.950)]">
+        <div className="w-full lg:w-[480px] xl:w-[540px] shrink-0 p-5 bg-zinc-950 border-t lg:border-t-0 lg:h-full lg:overflow-y-auto min-h-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <ControlPanel
             settings={settings}
             onChange={handleSettingsChange}

@@ -73,12 +73,14 @@ export const SLIDER_OPTIONS: SliderConfig[] = [
   { key: "phosphorTrails", label: "Phosphor Trails", min: 0, max: 0.95, step: 0.01, type: "slider", category: "Optics" },
 
   { key: "scanlineOpacity", label: "Scanline Opacity", min: 0, max: 1, step: 0.05, type: "slider", category: "Display" },
-  { key: "scanlineDensity", label: "Scanline Density", min: 240, max: 1080, step: 40, type: "slider", category: "Display" },
+  { key: "scanlineAmount", label: "Scanline Amount", min: 60, max: 680, step: 20, type: "slider", category: "Display" },
+  { key: "scanlineDensity", label: "Scanline Density", min: 0.1, max: 2.0, step: 0.1, type: "slider", category: "Display" },
   { key: "scanlinesEnabled", label: "Scanlines Enabled", min: 0, max: 1, step: 1, type: "toggle", category: "Display" },
   { key: "crtCurvature", label: "CRT Curvature", min: 0, max: 1, step: 0.01, type: "slider", category: "Display" },
   { key: "crtVignette", label: "CRT Vignette", min: 0, max: 2, step: 0.05, type: "slider", category: "Display" },
   { key: "grillMask", label: "Grill/Mask Type", min: 0, max: 3, step: 1, type: "toggle", category: "Display" },
   { key: "grillScale", label: "Grill/Mask Scale", min: 1.0, max: 5, step: 0.1, type: "slider", category: "Display" },
+  { key: "grillOpacity", label: "Grill Opacity", min: 0, max: 1, step: 0.05, type: "slider", category: "Display" },
 
   { key: "osdEnabled", label: "OSD Enabled", min: 0, max: 1, step: 1, type: "toggle", category: "OSD" },
   { key: "osdSize", label: "OSD Text Size", min: 0.1, max: 3, step: 0.1, type: "slider", category: "OSD" },

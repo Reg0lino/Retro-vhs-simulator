@@ -1518,10 +1518,12 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
       // 1. CRT Raster Scanline gaps
       if (settings.scanlinesEnabled !== false && settings.scanlineOpacity > 0) {
         g.fillStyle = "rgba(0, 0, 0, " + settings.scanlineOpacity + ")";
-        const linesCount = settings.scanlineDensity > 0 ? settings.scanlineDensity : 480;
-        const thickness = h / linesCount;
-        for (let y = 0; y < h; y += thickness * 2) {
-          g.fillRect(0, y, w, Math.max(1, thickness));
+        const linesCount = settings.scanlineAmount > 0 ? settings.scanlineAmount : 480;
+        const lineSpacing = h / linesCount;
+        const densityFactor = settings.scanlineDensity ?? 1.0;
+        const barThickness = Math.max(1, lineSpacing * densityFactor * 0.5); // Default is 50% gap coverage
+        for (let y = 0; y < h; y += lineSpacing) {
+          g.fillRect(0, y, w, barThickness);
         }
       }
 
@@ -1532,7 +1534,7 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
         const scale = settings.grillScale;
         
         if (settings.grillMask === "aperture") {
-          g.strokeStyle = "rgba(0, 0, 0, 0.15)";
+          g.strokeStyle = `rgba(0, 0, 0, ${settings.grillOpacity})`;
           g.lineWidth = 1;
           g.beginPath();
           for (let x = 0; x < w; x += 3 * scale) {
@@ -1542,7 +1544,7 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
           g.stroke();
         } else if (settings.grillMask === "shadow") {
           // Shadow Mask dots pattern
-          g.fillStyle = "rgba(0, 0, 0, 0.25)";
+          g.fillStyle = `rgba(0, 0, 0, ${settings.grillOpacity})`;
           g.beginPath();
           for (let y = 0; y < h; y += 4 * scale) {
             const shiftOdd = (y % (8 * scale) === 0 ? 0 : 2 * scale);
@@ -1553,7 +1555,7 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
           g.fill();
         } else if (settings.grillMask === "slot") {
           // Brick Slot dynamic texture
-          g.strokeStyle = "rgba(0, 0, 0, 0.16)";
+          g.strokeStyle = `rgba(0, 0, 0, ${settings.grillOpacity})`;
           g.lineWidth = 1;
           g.beginPath();
           for (let x = 0; x < w; x += 5 * scale) {

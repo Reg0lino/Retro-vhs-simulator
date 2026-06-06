@@ -91,12 +91,14 @@ export interface SimulatorSettings {
 
   // 6. CRT Monitor Aesthetics
   scanlineOpacity: number;
+  scanlineAmount: number;
   scanlineDensity: number;
   scanlinesEnabled: boolean;
   crtCurvature: number; // Screen lens bend physical simulation
   crtVignette: number; // Corner overshadows
   grillMask: "none" | "aperture" | "shadow" | "slot";
   grillScale: number;
+  grillOpacity: number;
 
    // 7. On-Screen Display (OSD) Settings
   osdEnabled: boolean;
