@@ -161,11 +161,11 @@ export const DEFAULT_SETTINGS: SimulatorSettings = {
 
 export const BASE_INITIAL_STATE: SimulatorSettings = {
   ...DEFAULT_SETTINGS,
-  sourceType: "camera",
+  sourceType: "colorbars",
   sourceColor: "#05051a",
 
   // PERFORMANCE / DOWNSCALE
-  pixelScale: 2,
+  pixelScale: 1,
 
   // RESET ALL WAVES (MOTION)
   hWaveAmp: 0,
@@ -289,6 +289,7 @@ export const PRESETS: Record<string, { name: string; description: string; settin
       trackingDisplacementX: 4.0,
       grillMask: "none",
       osdEnabled: true,
+      osdText: "FAMILY",
       osdColor: "#ffffff",
       osdSize: 0.8,
       osdDateMode: "random"
@@ -309,7 +310,8 @@ export const PRESETS: Record<string, { name: string; description: string; settin
       trackingScrollSpeed: -1.5,
       chromaSmearFactor: 0.45,
       lineJitterStrength: 1.8,
-      osdEnabled: true
+      osdEnabled: true,
+      osdText: "VHS"
     }
   },
   deepSea: {

@@ -376,7 +376,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                 }`}
               >
                 <Camera className="w-4 h-4" />
-                <span>{isCameraActive ? "Disconnect Video Feed" : "Source live Camera Feed"}</span>
+                <span>{isCameraActive ? "Disconnect Video Feed" : "Enable First Available Feed"}</span>
               </button>
             </div>
 
@@ -1526,8 +1526,8 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
               <input
                 type="range"
                 min="0"
-                max="0.75"
-                step="0.05"
+                max="1.0"
+                step="0.01"
                 value={settings.phosphorTrails}
                 onChange={(e) => onChange({ phosphorTrails: Number(e.target.value) })}
                 className="w-full accent-sky-500 bg-slate-950 h-5"

@@ -70,7 +70,7 @@ export const SLIDER_OPTIONS: SliderConfig[] = [
   { key: "ghostingOffsetX", label: "Ghosting Offset X", min: -100, max: 100, step: 1, unit: "px", type: "slider", category: "Optics" },
   { key: "ghostingOffsetY", label: "Ghosting Offset Y", min: -100, max: 100, step: 1, unit: "px", type: "slider", category: "Optics" },
   { key: "ghostingStrength", label: "Ghosting Intensity", min: 0, max: 1, step: 0.05, type: "slider", category: "Optics" },
-  { key: "phosphorTrails", label: "Phosphor Trails", min: 0, max: 0.95, step: 0.01, type: "slider", category: "Optics" },
+  { key: "phosphorTrails", label: "Phosphor Trails", min: 0, max: 1.0, step: 0.01, type: "slider", category: "Optics" },
 
   { key: "scanlineOpacity", label: "Scanline Opacity", min: 0, max: 1, step: 0.05, type: "slider", category: "Display" },
   { key: "scanlineAmount", label: "Scanline Amount", min: 60, max: 680, step: 20, type: "slider", category: "Display" },

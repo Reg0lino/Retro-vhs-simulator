@@ -524,6 +524,8 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
       if (settings.sourceType === "transparent") {
         bufferCtx.clearRect(0, 0, activeW, activeH);
       } else {
+        // If source is solid, use sourceColor, otherwise make padding black
+        bufferCtx.fillStyle = settings.sourceType === "solid" ? settings.sourceColor : "#000000";
         bufferCtx.fillRect(0, 0, activeW, activeH);
       }
 
@@ -649,6 +651,7 @@ export const CrtCanvas: React.FC<CrtCanvasProps> = ({
         }
         const trailCtx = (trailCanvas as any)._ctx;
         if (trailCtx) {
+          // Make trails more persistent at higher slider values (Linear Decay)
           trailCtx.globalAlpha = 1.0 - settings.phosphorTrails;
           trailCtx.drawImage(bufferCanvas, 0, 0);
           

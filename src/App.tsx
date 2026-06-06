@@ -355,11 +355,15 @@ export default function App() {
     if (presetSettings) {
       setActivePreset(key);
       
-      const baseSettings = BASE_INITIAL_STATE;
+      const baseSettings = overwrite ? BASE_INITIAL_STATE : settings;
+      const currentSource = settings.sourceType;
       const nextS = { ...baseSettings, ...presetSettings };
       
+      // Preserve current source type
+      nextS.sourceType = currentSource;
+      
       // Keep camera active and persistent if running
-      if (isCameraActive || settings.sourceType === "camera") {
+      if (isCameraActive || currentSource === "camera") {
         nextS.sourceType = "camera";
       }
       
@@ -507,25 +511,26 @@ export default function App() {
 
   // Adjust parameters inline
   const handleSettingsChange = (updates: Partial<SimulatorSettings>) => {
-    const next = { ...settings, ...updates };
-    setSettings(next);
+    setSettings(prev => {
+      const next = { ...prev, ...updates };
+      // Dynamic logging for verification & slider diagnostic triggers
+      Object.entries(updates).forEach(([key, val]) => {
+        // 1. Sleek styled diagnostic console trace
+        console.log(
+          `%c[VHS DIAGNOSTIC] TIMESTAMP: ${Date.now()} | slider: "${key}" %c→ VALUE: %c${val}`,
+          "color: #ea580c; font-weight: bold",
+          "color: #a1a1aa",
+          "color: #10b981; font-weight: bold; font-family: monospace"
+        );
 
-    // Dynamic logging for verification & slider diagnostic triggers
-    Object.entries(updates).forEach(([key, val]) => {
-      // 1. Sleek styled diagnostic console trace
-      console.log(
-        `%c[VHS DIAGNOSTIC] TIMESTAMP: ${Date.now()} | slider: "${key}" %c→ VALUE: %c${val}`,
-        "color: #ea580c; font-weight: bold",
-        "color: #a1a1aa",
-        "color: #10b981; font-weight: bold; font-family: monospace"
-      );
-
-      // 2. Mirror into state cache for real-time Overlay Diagnostic lists
-      const nowStr = new Date().toLocaleTimeString("en-US", { hour12: false, fractionalSecondDigits: 2 } as any);
-      setChangedSliders((prev) => {
-        const item = { param: key, value: typeof val === "number" ? val.toFixed(2).replace(/\.00$/, "") : String(val), time: nowStr };
-        return [item, ...prev].slice(0, 4); // Keep last 4 records for pristine space layout
+        // 2. Mirror into state cache for real-time Overlay Diagnostic lists
+        const nowStr = new Date().toLocaleTimeString("en-US", { hour12: false, fractionalSecondDigits: 2 } as any);
+        setChangedSliders((prev) => {
+          const item = { param: key, value: typeof val === "number" ? val.toFixed(2).replace(/\.00$/, "") : String(val), time: nowStr };
+          return [item, ...prev].slice(0, 4); // Keep last 4 records for pristine space layout
+        });
       });
+      return next;
     });
   };
 
@@ -780,7 +785,7 @@ export default function App() {
         cameraVideoNode.srcObject = null;
       }
       setIsCameraActive(false);
-      handleSettingsChange({ sourceType: "solid" });
+      handleSettingsChange({ sourceType: "colorbars" });
     } else {
       await startCameraWithDevice(activeCameraDeviceId || null);
     }
@@ -903,7 +908,6 @@ export default function App() {
       globalBrightness: () => 90 + Math.floor(Math.random() * 40),
       globalContrast: () => 85 + Math.floor(Math.random() * 60),
       globalSaturation: () => Math.random() < 0.2 ? 0 : 50 + Math.floor(Math.random() * 100),
-      globalHueRotate: () => Math.random() < 0.7 ? 0 : Math.floor(Math.random() * 360),
       globalBlur: () => Math.random() < 0.6 ? 0 : Math.random() * 2.5,
       globalWobbleSpeed: () => 0.4 + Math.random() * 2.0,
       globalWobbleAmpX: () => Math.random() < 0.5 ? 0 : Math.random() * 12.0,
@@ -940,9 +944,9 @@ export default function App() {
       ghostingOffsetX: () => Math.floor(-40 + Math.random() * 80),
       ghostingOffsetY: () => Math.floor(-20 + Math.random() * 40),
       ghostingStrength: () => Math.random() * 0.45,
-      phosphorTrails: () => Math.random() < 0.5 ? 0 : Math.random() * 0.8,
+      phosphorTrails: () => Math.random() < 0.5 ? 0 : Math.random(),
       scanlineOpacity: () => 0.1 + Math.random() * 0.5,
-      scanlineDensity: () => Math.random() < 0.5 ? 240 : 480,
+      scanlineDensity: () => 0.1 + Math.random() * 0.9,
       crtCurvature: () => Math.random() * 0.12,
       crtVignette: () => 0.1 + Math.random() * 0.6,
       grillMask: () => ["none", "aperture", "shadow", "slot"][Math.floor(Math.random() * 4)] as any,
@@ -960,6 +964,7 @@ export default function App() {
       filmGrainSize: () => Math.floor(Math.random() * 3) + 1,
       filmLightLeaks: () => Math.random() < 0.7 ? 0 : Math.random() * 3.0,
       filmVignette: () => Math.random() < 0.6 ? 0 : Math.random() * 0.8,
+      filmVignetteRadius: () => Math.random() * 0.5,
       filmVignetteSoftness: () => 0.2 + Math.random() * 0.8,
       filmHalation: () => Math.random() < 0.8 ? 0 : Math.random() * 0.5,
       filmBreath: () => Math.random() < 0.7 ? 0 : Math.random() * 1.5,
@@ -975,6 +980,12 @@ export default function App() {
     const randomSettings: Partial<SimulatorSettings> = {};
     // Randomize a random selection of sliders (roughly 70% of them each time)
     Object.entries(allPossibleUpdates).forEach(([key, getRandom]) => {
+      // Prefer not to wobble
+      if ((key.includes("Wobble") || key.includes("hWave") || key.includes("vWave")) && Math.random() < 0.8) return;
+      
+      // Exclude film iris settings and dynamic phase rotation
+      if (["filmVignette", "filmVignetteRadius", "filmVignetteSoftness", "chromaScrollSpeed", "chromaPhaseShift", "filmBurnHue"].includes(key)) return;
+
       if (Math.random() < 0.7) {
         (randomSettings as any)[key] = getRandom();
       }
@@ -983,6 +994,7 @@ export default function App() {
     setSettings(() => ({
       ...BASE_INITIAL_STATE,
       ...randomSettings,
+      globalHueRotate: 0,
       sourceType: (isCameraActive || settings.sourceType === "camera") ? "camera" : (randomSettings.sourceType || BASE_INITIAL_STATE.sourceType)
     }));
     setSyncReset(prev => prev + 1);
